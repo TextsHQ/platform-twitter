@@ -1,10 +1,8 @@
 import { orderBy, pick, maxBy, truncate } from 'lodash'
 import he from 'he'
-import { texts, Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, ThreadActionType, ServerEventType } from '@textshq/platform-sdk'
+import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, ThreadActionType, ServerEventType } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
-
-const { IS_DEV } = texts
 
 // function replaceSubstringInIndices(mainStr: string, start: number, end: number, insertStr: string) {
 //   return mainStr.substring(0, start) + insertStr + mainStr.substring(end)
@@ -311,7 +309,6 @@ export function mapEvent(event: any): ServerEvent {
       durationMs: 3000,
     }
   }
-  if (IS_DEV) console.log(event)
 }
 
 export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): ServerEvent {
