@@ -148,7 +148,7 @@ export default class Twitter implements PlatformAPI {
 
   getCurrentUser = () => mapCurrentUser(this.currentUser)
 
-  searchUsers = mem(async (typed: string): Promise<Participant[]> => {
+  searchUsers = mem(async (typed: string) => {
     const { users } = await this.api.typeahead(typed) || {}
     return (users as any[] || []).map(u => mapParticipant(u, {}))
   })
