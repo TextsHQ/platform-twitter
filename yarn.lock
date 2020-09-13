@@ -157,9 +157,19 @@
   dependencies:
     defer-to-connect "^2.0.0"
 
-"@textshq/eslint-config@link:../eslint-config":
-  version "0.0.0"
-  uid ""
+"@textshq/eslint-config@https://github.com/TextsHQ/eslint-config":
+  version "1.0.4"
+  resolved "https://github.com/TextsHQ/eslint-config#17a1914089f6acd700e79ff584bd839d86573a5f"
+  dependencies:
+    "@typescript-eslint/eslint-plugin" "^4"
+    babel-eslint "^10"
+    eslint-config-airbnb-typescript "^10"
+    eslint-config-react-app "^5"
+    eslint-plugin-flowtype "^5"
+    eslint-plugin-import "^2"
+    eslint-plugin-jsx-a11y "^6"
+    eslint-plugin-react "^7"
+    eslint-plugin-react-hooks "^4"
 
 "@textshq/platform-sdk@link:../platform-sdk":
   version "0.0.0"
