@@ -1,6 +1,6 @@
 import { orderBy, pick, maxBy, truncate } from 'lodash'
 import he from 'he'
-import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, ThreadActionType, ServerEventType } from '@textshq/platform-sdk'
+import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, ThreadActionType, ServerEventType, UNKNOWN_DATE } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
 
@@ -90,7 +90,7 @@ function getSeen(threadParticipants: any[] = [], msg: any): MessageSeen {
   const result = {}
   threadParticipants.forEach(({ user_id, last_read_event_id }) => {
     if (!last_read_event_id || msg.id > last_read_event_id) return
-    result[user_id] = new Date()
+    result[user_id] = UNKNOWN_DATE
   })
   if (Object.keys(result).length > 0) return result
 }
