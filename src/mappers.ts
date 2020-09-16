@@ -92,7 +92,7 @@ function getSeen(threadParticipants: any[] = [], msg: any): MessageSeen {
     if (!last_read_event_id || msg.id > last_read_event_id) return
     result[user_id] = UNKNOWN_DATE
   })
-  if (Object.keys(result).length > 0) return result
+  return result
 }
 
 const getVideo = (video: any): MessageAttachment => ({
