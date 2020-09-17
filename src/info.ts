@@ -28,7 +28,7 @@ const info: Platform = {
     Attribute.SUPPORTS_GROUP_IMAGE_CHANGE,
   ]),
   getUserProfileLink: ({ username }) =>
-    `https://twitter.com/${username}`,
+    username && `https://twitter.com/${username}`,
   mapMessage,
 }
 
