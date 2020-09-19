@@ -1,6 +1,6 @@
 import { orderBy, pick, maxBy, truncate } from 'lodash'
 import he from 'he'
-import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, ThreadActionType, ServerEventType, UNKNOWN_DATE } from '@textshq/platform-sdk'
+import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, ThreadActionType, ServerEventType, UNKNOWN_DATE, texts } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
 
@@ -82,9 +82,14 @@ export const REACTION_MAP_TO_TWITTER = {
   dislike: 'disagree',
 }
 
+const mapReaction = ({ id, sender_id, reaction_key }: any) => ({
+  id,
+  participantID: sender_id,
+  reactionName: REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key,
+})
+
 const mapReactions = (reactions: any[]) =>
-  reactions.map<MessageReaction>(({ sender_id, reaction_key }) =>
-    ({ participantID: sender_id, reactionName: REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key }))
+  reactions.map<MessageReaction>(mapReaction)
 
 function getSeen(threadParticipants: any[] = [], msg: any): MessageSeen {
   const result = {}
@@ -350,8 +355,25 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
       data: message,
     }
   }
-  if (![MessageType.REACTION_CREATE, MessageType.REACTION_DELETE].includes(entryType as MessageType)) {
-    console.log('unknown twitter entry', entryType)
+  if (entryType === MessageType.REACTION_CREATE) {
+    const reaction = mapReaction(entry)
+    return {
+      type: ServerEventType.STATE_SYNC,
+      mutationType: 'created',
+      objectName: 'message_reaction',
+      objectID: [threadID, entry.message_id, reaction.id],
+      data: reaction,
+    }
   }
+  if (entryType === MessageType.REACTION_DELETE) {
+    return {
+      type: ServerEventType.STATE_SYNC,
+      mutationType: 'deleted',
+      objectName: 'message_reaction',
+      objectID: [threadID, entry.message_id, entry.id],
+    }
+  }
+  texts.log(entryType, entry)
+  console.log('unknown twitter entry', entryType)
   return { type: ServerEventType.THREAD_MESSAGES_REFRESH, threadID }
 }
