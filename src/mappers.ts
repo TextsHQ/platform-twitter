@@ -297,13 +297,14 @@ export function mapEvent(event: any): ServerEvent {
   const { conversation_id: threadID, user_id: participantID } = event.payload[payloadType]
   if (payloadType === 'dm_update') {
     return {
-      type: ServerEventType.THREAD_MESSAGES_UPDATED,
+      type: ServerEventType.THREAD_MESSAGES_REFRESH,
       threadID,
     }
   }
   if (payloadType === 'dm_typing') {
     return {
       type: ServerEventType.PARTICIPANT_TYPING,
+      typing: true,
       threadID,
       participantID,
       durationMs: 3000,
@@ -324,8 +325,10 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
   // }
   if (entryType === MessageType.REMOVE_CONVERSATION) {
     return {
-      type: ServerEventType.THREAD_DELETED,
-      threadID,
+      type: ServerEventType.STATE_SYNC,
+      mutationType: 'deleted',
+      objectID: [threadID],
+      objectName: 'thread',
     }
   }
   if ([
@@ -338,12 +341,17 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
     MessageType.CONVERSATION_NAME_UPDATE,
     MessageType.WELCOME_MESSAGE,
   ].includes(entryType as MessageType)) {
+    const message = mapMessage(entryObj, currentUserID, json.user_events.conversations[threadID]?.participants)
     return {
-      type: ServerEventType.THREAD_MESSAGES_ADDED,
-      threadID,
-      messages: [mapMessage(entryObj, currentUserID, json.user_events.conversations[threadID]?.participants)],
+      type: ServerEventType.STATE_SYNC,
+      mutationType: 'created',
+      objectName: 'message',
+      objectID: [threadID, message.id],
+      data: message,
     }
   }
-  if ([MessageType.REACTION_CREATE, MessageType.REACTION_DELETE].includes(entryType as MessageType)) console.log('unknown twitter entry', entryType)
-  return { type: ServerEventType.THREAD_MESSAGES_UPDATED, threadID }
+  if (![MessageType.REACTION_CREATE, MessageType.REACTION_DELETE].includes(entryType as MessageType)) {
+    console.log('unknown twitter entry', entryType)
+  }
+  return { type: ServerEventType.THREAD_MESSAGES_REFRESH, threadID }
 }
