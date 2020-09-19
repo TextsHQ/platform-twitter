@@ -82,11 +82,14 @@ export const REACTION_MAP_TO_TWITTER = {
   dislike: 'disagree',
 }
 
-const mapReaction = ({ id, sender_id, reaction_key }: any) => ({
-  id,
-  participantID: sender_id,
-  reactionName: REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key,
-})
+const mapReaction = ({ sender_id: participantID, reaction_key }: any) => {
+  const reactionName = REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key
+  return {
+    id: [participantID, reactionName].join('_'),
+    participantID,
+    reactionName,
+  }
+}
 
 const mapReactions = (reactions: any[]) =>
   reactions.map<MessageReaction>(mapReaction)
