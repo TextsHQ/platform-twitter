@@ -300,12 +300,6 @@ export function mapEvent(event: any): ServerEvent {
   const payloadType = Object.keys(event.payload)[0]
   if (!['dm_update', 'dm_typing'].includes(payloadType)) return
   const { conversation_id: threadID, user_id: participantID } = event.payload[payloadType]
-  if (payloadType === 'dm_update') {
-    return {
-      type: ServerEventType.THREAD_MESSAGES_REFRESH,
-      threadID,
-    }
-  }
   if (payloadType === 'dm_typing') {
     return {
       type: ServerEventType.PARTICIPANT_TYPING,
@@ -315,6 +309,7 @@ export function mapEvent(event: any): ServerEvent {
       durationMs: 3000,
     }
   }
+  // if (payloadType === 'dm_update') return null
 }
 
 export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): ServerEvent {

@@ -3,7 +3,7 @@ import bluebird from 'bluebird'
 import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
 import { isEqual } from 'lodash'
-import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Participant, Paginated, Thread, MessageAttachment, MessageContent, InboxName, ReAuthError, MessageSendOptions } from '@textshq/platform-sdk'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageAttachment, MessageContent, InboxName, ReAuthError, MessageSendOptions } from '@textshq/platform-sdk'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate } from './mappers'
 import TwitterAPI from './api'
@@ -35,6 +35,39 @@ export default class Twitter implements PlatformAPI {
     if (!this.currentUser?.id_str) throw new ReAuthError()
   }
 
+  private processUserUpdates = (json: any) => {
+    this.userUpdatesCursor = json.user_events.cursor
+    const events = (json.user_events?.entries as any[])?.map(entryObj => mapUserUpdate(entryObj, this.currentUser.id_str, json))
+    if (events?.length > 0) this.onServerEvent?.(events)
+  }
+
+  private pollTimeout: NodeJS.Timeout
+
+  private pollUserUpdates = async () => {
+    clearTimeout(this.pollTimeout)
+    if (this.disposed) return
+    if (!this.userUpdatesCursor) return
+    let increaseDelay = false
+    try {
+      const json = await this.api.dm_user_updates(this.userUpdatesCursor)
+      if (IS_DEV) console.log(JSON.stringify(json, null, 2))
+      if (json.user_events) {
+        this.processUserUpdates(json)
+      } else {
+        increaseDelay = true
+      }
+    } catch (err) {
+      increaseDelay = true
+      console.error('tw error', err)
+      Sentry.captureException(err)
+    }
+    // mapThreads(json.user_events, currentUser, inboxType)
+    // const { last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id } = json.user_events
+    // this.userUpdatesIDs = json.user_events
+    // await this.api.dm_update_last_seen_event_id({ last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id })
+    this.pollTimeout = setTimeout(this.pollUserUpdates, increaseDelay ? 60_000 : 8_000)
+  }
+
   setupLivePipeline = () => {
     this.es?.close()
     this.es = this.api.live_pipeline_events(this.subbedTopics.join(','))
@@ -50,6 +83,7 @@ export default class Twitter implements PlatformAPI {
       } else {
         const mapped = mapEvent(json)
         if (mapped) this.onServerEvent?.([mapped])
+        else this.pollUserUpdates()
       }
     }
     let errorCount = 0
@@ -63,53 +97,19 @@ export default class Twitter implements PlatformAPI {
     }
   }
 
-  private processUserUpdates = (json: any) => {
-    this.userUpdatesCursor = json.user_events.cursor
-    const events = (json.user_events?.entries as any[])?.map(entryObj => mapUserUpdate(entryObj, this.currentUser.id_str, json))
-    if (events?.length > 0) this.onServerEvent?.(events)
-  }
-
-  private setupUserUpdatesPolling = () => {
-    const poll = async () => {
-      if (this.disposed) return
-      let increaseDelay = false
-      if (this.userUpdatesCursor) {
-        try {
-          const json = await this.api.dm_user_updates(this.userUpdatesCursor)
-          if (IS_DEV) console.log(JSON.stringify(json, null, 2))
-          if (json.user_events) {
-            this.processUserUpdates(json)
-          } else {
-            increaseDelay = true
-          }
-        } catch (err) {
-          increaseDelay = true
-          console.error('tw error', err)
-          Sentry.captureException(err)
-        }
-        // mapThreads(json.user_events, currentUser, inboxType)
-        // const { last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id } = json.user_events
-        // this.userUpdatesIDs = json.user_events
-        // await this.api.dm_update_last_seen_event_id({ last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id })
-      }
-      await bluebird.delay(increaseDelay ? 60_000 : 8_000)
-      poll()
-    }
-    poll()
-  }
-
   private onServerEvent: OnServerEventCallback
 
   subscribeToEvents = (onEvent: OnServerEventCallback): void => {
     this.onServerEvent = onEvent
     this.setupLivePipeline()
-    this.setupUserUpdatesPolling()
+    this.pollUserUpdates()
   }
 
   dispose = () => {
     this.es?.close()
     this.es = null
     this.disposed = true
+    clearTimeout(this.pollTimeout)
   }
 
   onThreadSelected = async (threadID: string) => {
