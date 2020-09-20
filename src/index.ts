@@ -216,7 +216,7 @@ export default class Twitter implements PlatformAPI {
   }
 
   private sendTextMessage = async (threadID: string, text: string, { pendingMessageID }: MessageSendOptions) => {
-    const { entries, errors } = await this.api.dm_new(text, threadID)
+    const { entries, errors } = await this.api.dm_new(text, threadID, pendingMessageID)
     if (IS_DEV) console.log(entries, errors)
     const mapped = (entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
     return mapped
@@ -225,7 +225,7 @@ export default class Twitter implements PlatformAPI {
   private sendFileFromBuffer = async (threadID: string, fileBuffer: Buffer, mimeType: string, { pendingMessageID }: MessageSendOptions) => {
     const mediaID = await this.api.upload(threadID, fileBuffer, mimeType)
     if (!mediaID) return
-    const { entries, errors } = await this.api.dm_new('', threadID, mediaID)
+    const { entries, errors } = await this.api.dm_new('', threadID, pendingMessageID, mediaID)
     if (IS_DEV) console.log(entries, errors)
     const mapped = (entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
     return mapped

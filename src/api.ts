@@ -259,14 +259,14 @@ export default class TwitterAPI {
       referer: 'https://twitter.com/messages/compose',
     })
 
-  dm_new = (text: string, threadID: string, mediaID: string = undefined) => {
+  dm_new = (text: string, threadID: string, generatedMsgID: string, mediaID: string = undefined) => {
     const form = {
       ...commonDMParams,
       text,
       conversation_id: threadID,
       media_id: mediaID,
       recipient_ids: 'false',
-      request_id: uuid(),
+      request_id: (generatedMsgID || uuid()).toUpperCase(),
       ext: EXT,
     }
     if (!form.media_id) delete form.media_id
@@ -286,7 +286,7 @@ export default class TwitterAPI {
       form: {
         ...commonDMParams,
         id: messageID,
-        request_id: uuid(),
+        request_id: uuid().toUpperCase(),
       },
     })
 
