@@ -82,14 +82,11 @@ export const REACTION_MAP_TO_TWITTER = {
   dislike: 'disagree',
 }
 
-const mapReaction = ({ sender_id: participantID, reaction_key }: any) => {
-  const reactionName = REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key
-  return {
-    id: [participantID, reactionName].join('_'),
-    participantID,
-    reactionName,
-  }
-}
+const mapReaction = ({ sender_id: participantID, reaction_key }: any) => ({
+  id: participantID,
+  participantID,
+  reactionName: REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key,
+})
 
 const mapReactions = (reactions: any[]) =>
   reactions.map<MessageReaction>(mapReaction)
@@ -368,7 +365,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
       type: ServerEventType.STATE_SYNC,
       mutationType: 'deleted',
       objectName: 'message_reaction',
-      objectID: [threadID, entry.message_id, entry.id],
+      objectID: [threadID, entry.message_id, String(entry.sender_id)],
     }
   }
   texts.log(entryType, entry)
