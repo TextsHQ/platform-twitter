@@ -249,7 +249,7 @@ function getReactionMessages(m: any, currentUserID: string) {
       isSender: String(r.sender_id) === currentUserID,
       reactions: [],
       attachments: [],
-      text: `{{sender}} reacted with ${supportedReactions[REACTION_MAP_TO_NORMALIZED[r.reaction_key]].render}${truncated ? `: ${truncated}` : ''}`,
+      text: `{{sender}} reacted with ${supportedReactions[REACTION_MAP_TO_NORMALIZED[r.reaction_key]]?.render || r.reaction_key}${truncated ? `: ${truncated}` : ''}`,
       parseTemplate: true,
       isAction: true,
       isHidden: true,

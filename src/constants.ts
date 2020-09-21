@@ -8,6 +8,7 @@ export const supportedReactions: Record<string, Reaction> = {
   surprised: { title: 'Surprised', render: '😲' },
   cry: { title: 'Cry', render: '😢' },
   fire: { title: 'Lit', render: '🔥' },
+  mask: { title: 'Mask', render: '😷' },
 }
 
 export enum MessageType {
