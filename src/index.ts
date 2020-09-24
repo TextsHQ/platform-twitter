@@ -46,20 +46,23 @@ export default class Twitter implements PlatformAPI {
   private pollUserUpdates = async () => {
     clearTimeout(this.pollTimeout)
     if (this.disposed) return
-    if (!this.userUpdatesCursor) return
     let increaseDelay = false
-    try {
-      const json = await this.api.dm_user_updates(this.userUpdatesCursor)
-      if (IS_DEV) console.log(JSON.stringify(json, null, 2))
-      if (json.user_events) {
-        this.processUserUpdates(json)
-      } else {
+    if (this.userUpdatesCursor) {
+      try {
+        const json = await this.api.dm_user_updates(this.userUpdatesCursor)
+        if (IS_DEV) console.log(JSON.stringify(json, null, 2))
+        if (json.user_events) {
+          this.processUserUpdates(json)
+        } else {
+          increaseDelay = true
+        }
+      } catch (err) {
         increaseDelay = true
+        console.error('tw error', err)
+        Sentry.captureException(err)
       }
-    } catch (err) {
-      increaseDelay = true
-      console.error('tw error', err)
-      Sentry.captureException(err)
+    } else {
+      texts.log('skipping polling bc !this.userUpdatesCursor')
     }
     // mapThreads(json.user_events, currentUser, inboxType)
     // const { last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id } = json.user_events
