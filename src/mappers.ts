@@ -284,6 +284,7 @@ export function mapThreads(json: any, currentUser: any, inboxType: string): Thre
     if (t.trusted !== (inboxType === 'trusted')) return null
     const thread = mapThread(t, users, currentUser)
     const messages = mapMessages(groupedMessages[t.conversation_id] || [], thread._original, currentUser.id_str)
+    const lastMessage = messages[messages.length - 1]
     return {
       ...thread,
       messages: {
@@ -291,7 +292,7 @@ export function mapThreads(json: any, currentUser: any, inboxType: string): Thre
         items: messages,
         oldestCursor: t.min_entry_id,
       },
-      isUnread: +t.last_read_event_id !== +messages[messages.length - 1]?.id,
+      isUnread: +t.last_read_event_id < +lastMessage?.id,
     }
   }).filter(Boolean)
 }
