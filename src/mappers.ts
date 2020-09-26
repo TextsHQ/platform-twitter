@@ -1,6 +1,6 @@
 import { orderBy, pick, maxBy, truncate } from 'lodash'
 import he from 'he'
-import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, ThreadActionType, ServerEventType, UNKNOWN_DATE, texts } from '@textshq/platform-sdk'
+import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, MessageActionType, ServerEventType, UNKNOWN_DATE, texts } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
 
@@ -197,7 +197,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
       mapped.senderID = msg.sender_id
       mapped.text = `{{sender}} added ${participants.map(p => p.user_id).filter(u => u !== mapped.senderID).map(u => `{{${u}}}`).join(', ')}`
       mapped.action = {
-        type: ThreadActionType.THREAD_PARTICIPANTS_ADDED,
+        type: MessageActionType.THREAD_PARTICIPANTS_ADDED,
         participantIDs: participants.map(p => p.user_id),
         actorParticipantID: mapped.senderID,
       }
@@ -208,24 +208,24 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
       mapped.senderID = msg.by_user_id
       mapped.text = `{{sender}} changed the group name to ${msg.conversation_name}`
       mapped.action = {
-        type: ThreadActionType.THREAD_TITLE_UPDATED,
+        type: MessageActionType.THREAD_TITLE_UPDATED,
         title: msg.conversation_name,
         actorParticipantID: mapped.senderID,
       }
     } else if (type === MessageType.PARTICIPANTS_LEAVE) {
       mapped.text = `${participants.map(p => `{{${p.user_id}}}`).join(', ')} left`
       mapped.action = {
-        type: ThreadActionType.THREAD_PARTICIPANTS_REMOVED,
+        type: MessageActionType.THREAD_PARTICIPANTS_REMOVED,
         participantIDs: participants.map(p => p.user_id),
         actorParticipantID: null,
       }
     } else if (type === MessageType.TRUST_CONVERSATION) {
       if (msg.reason === 'accept') {
         mapped.text = 'You accepted the request'
-        mapped.action = { type: ThreadActionType.MESSAGE_REQUEST_ACCEPTED }
+        mapped.action = { type: MessageActionType.MESSAGE_REQUEST_ACCEPTED }
       } else if (msg.reason === 'follow') {
         mapped.text = 'You followed this account'
-        mapped.action = { type: ThreadActionType.MESSAGE_REQUEST_ACCEPTED }
+        mapped.action = { type: MessageActionType.MESSAGE_REQUEST_ACCEPTED }
       }
     } else if (type === 'conversation_create') {
       return null
@@ -241,15 +241,23 @@ function getReactionMessages(m: any, currentUserID: string) {
   if (!msg.message_reactions) return []
   return (msg.message_reactions as any[]).map<Message>(r => {
     const truncated = truncate(m.message_data?.text)
+    const senderID = String(r.sender_id)
+    const reactionName = REACTION_MAP_TO_NORMALIZED[r.reaction_key] || r.reaction_key
     return {
       _original: r,
       id: r.id,
       timestamp: new Date(+r.time),
-      senderID: String(r.sender_id),
+      senderID,
       isSender: String(r.sender_id) === currentUserID,
       reactions: [],
       attachments: [],
-      text: `{{sender}} reacted with ${supportedReactions[REACTION_MAP_TO_NORMALIZED[r.reaction_key]]?.render || r.reaction_key}${truncated ? `: ${truncated}` : ''}`,
+      text: `{{sender}} reacted with ${supportedReactions[reactionName]?.render || r.reaction_key}${truncated ? `: ${truncated}` : ''}`,
+      action: {
+        type: MessageActionType.MESSAGE_REACTION_CREATED,
+        messageID: m.id,
+        participantID: senderID,
+        reactionName,
+      },
       parseTemplate: true,
       isAction: true,
       isHidden: true,
