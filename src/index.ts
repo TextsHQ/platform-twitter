@@ -246,15 +246,10 @@ export default class Twitter implements PlatformAPI {
   sendReadReceipt = async (threadID: string, messageID: string) =>
     this.api.dm_conversation_mark_read(threadID, messageID)
 
-  loadDynamicMessage = async (message: Message) => {
-    const map = async (a: MessageAttachment) => {
-      const { body: data } = await this.api.authenticatedGet(a.extra)
-      return a.extra != null ? { ...a, data, available: true } : a
-    }
-    return {
-      attachments: await bluebird.map(message.attachments, map),
-      isDynamicMessage: false,
-    }
+  getAsset = async (key: string) => {
+    const url = Buffer.from(key, 'base64').toString()
+    const { body } = await this.api.authenticatedGet(url)
+    return body
   }
 
   deleteMessage = async (threadID: string, messageID: string) => {

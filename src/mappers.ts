@@ -109,9 +109,8 @@ const getVideo = (video: any): MessageAttachment => ({
 const getDynamicPhoto = (photo: any): MessageAttachment => ({
   id: photo.id_str,
   type: MessageAttachmentType.IMG,
-  srcURL: null,
+  srcURL: `asset://${Buffer.from(photo.media_url_https).toString('base64')}`,
   size: pick(photo.original_info, ['width', 'height']),
-  extra: photo.media_url_https,
 })
 const getPhoto = (photo: any): MessageAttachment => ({
   id: photo.id_str,
@@ -184,7 +183,6 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
     }
     if (photo) {
       mapped.attachments.push(getDynamicPhoto(photo))
-      mapped.isDynamicMessage = true
     }
     if (fleet) {
       mapped.textHeading = 'Replied to fleet'
