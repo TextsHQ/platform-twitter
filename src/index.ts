@@ -36,7 +36,7 @@ export default class Twitter implements PlatformAPI {
   }
 
   private processUserUpdates = (json: any) => {
-    this.userUpdatesCursor = json.user_events.cursor
+    this.userUpdatesCursor = json.user_events?.cursor
     const events = (json.user_events?.entries as any[])?.map(entryObj => mapUserUpdate(entryObj, this.currentUser.id_str, json))
     if (events?.length > 0) this.onServerEvent?.(events)
   }
