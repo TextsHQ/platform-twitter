@@ -1,9 +1,8 @@
 import { promises as fs } from 'fs'
-import bluebird from 'bluebird'
 import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
 import { isEqual } from 'lodash'
-import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageAttachment, MessageContent, InboxName, ReAuthError, MessageSendOptions } from '@textshq/platform-sdk'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions } from '@textshq/platform-sdk'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate } from './mappers'
 import TwitterAPI from './api'
