@@ -2,7 +2,7 @@ import { promises as fs } from 'fs'
 import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
 import { isEqual } from 'lodash'
-import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions } from '@textshq/platform-sdk'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg } from '@textshq/platform-sdk'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate } from './mappers'
 import TwitterAPI from './api'
@@ -155,7 +155,7 @@ export default class Twitter implements PlatformAPI {
     return (users as any[] || []).map(u => mapParticipant(u, {}))
   })
 
-  getThreads = async (inboxName: InboxName, { cursor, direction } = { cursor: null, direction: null }): Promise<Paginated<Thread>> => {
+  getThreads = async (inboxName: InboxName, { cursor, direction }: PaginationArg = { cursor: null, direction: null }): Promise<Paginated<Thread>> => {
     const inboxType = {
       [InboxName.NORMAL]: 'trusted',
       [InboxName.REQUESTS]: 'untrusted',
@@ -180,7 +180,7 @@ export default class Twitter implements PlatformAPI {
     }
   }
 
-  getMessages = async (threadID: string, { cursor, direction } = { cursor: null, direction: null }): Promise<Paginated<Message>> => {
+  getMessages = async (threadID: string, { cursor, direction }: PaginationArg = { cursor: null, direction: null }): Promise<Paginated<Message>> => {
     const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, cursor ? { [direction === 'before' ? 'max_id' : 'min_id']: cursor } : {})
     const entries = Object.values(conversation_timeline.entries || {})
     const thread = conversation_timeline.conversations[threadID]
