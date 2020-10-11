@@ -155,15 +155,15 @@ export default class Twitter implements PlatformAPI {
     return (users as any[] || []).map(u => mapParticipant(u, {}))
   })
 
-  getThreads = async (inboxName: InboxName, beforeCursor: string = null): Promise<Paginated<Thread>> => {
+  getThreads = async (inboxName: InboxName, { cursor, direction } = { cursor: null, direction: null }): Promise<Paginated<Thread>> => {
     const inboxType = {
       [InboxName.NORMAL]: 'trusted',
       [InboxName.REQUESTS]: 'untrusted',
     }[inboxName]
     let json = null
     let timeline = null
-    if (beforeCursor) {
-      json = await this.api.dm_inbox_timeline(inboxType, beforeCursor)
+    if (cursor) {
+      json = await this.api.dm_inbox_timeline(inboxType, { [direction === 'before' ? 'max_id' : 'min_id']: cursor })
       json = json.inbox_timeline
       timeline = json
     } else {
@@ -176,18 +176,20 @@ export default class Twitter implements PlatformAPI {
       items: mapThreads(json, this.currentUser, inboxType),
       hasMore: timeline.status !== 'AT_END',
       oldestCursor: timeline.min_entry_id,
+      newestCursor: timeline.max_entry_id,
     }
   }
 
-  getMessages = async (threadID: string, beforeCursor: string): Promise<Paginated<Message>> => {
-    const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, beforeCursor)
+  getMessages = async (threadID: string, { cursor, direction } = { cursor: null, direction: null }): Promise<Paginated<Message>> => {
+    const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, cursor ? { [direction === 'before' ? 'max_id' : 'min_id']: cursor } : {})
     const entries = Object.values(conversation_timeline.entries || {})
     const thread = conversation_timeline.conversations[threadID]
     const items = mapMessages(entries, thread, this.currentUser.id_str)
     return {
       items,
-      oldestCursor: conversation_timeline.min_entry_id,
       hasMore: conversation_timeline.status !== 'AT_END',
+      oldestCursor: conversation_timeline.min_entry_id,
+      newestCursor: conversation_timeline.max_entry_id,
     }
   }
 

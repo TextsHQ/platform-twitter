@@ -290,16 +290,15 @@ export default class TwitterAPI {
       },
     })
 
-  dm_conversation_thread = (threadID: string, max_id: string) => {
+  dm_conversation_thread = (threadID: string, pagination: { min_id?: string, max_id?: string }) => {
     const searchParams = {
       ...commonParams,
       ...commonDMParams,
       include_conversation_info: 'true',
-      max_id,
+      ...pagination,
       context: 'FETCH_DM_CONVERSATION',
       ext: EXT,
     }
-    if (!max_id) delete searchParams.max_id
     return this.fetch({
       url: `${ENDPOINT}1.1/dm/conversation/${threadID}.json`,
       referer: `https://twitter.com/messages/${threadID}`,
@@ -333,7 +332,7 @@ export default class TwitterAPI {
       },
     })
 
-  dm_inbox_timeline = (inboxType: string, max_id: string) =>
+  dm_inbox_timeline = (inboxType: string, pagination: { min_id?: string, max_id?: string }) =>
     this.fetch({
       url: `${ENDPOINT}1.1/dm/inbox_timeline/${inboxType}.json`,
       referer: 'https://twitter.com/messages',
@@ -341,7 +340,7 @@ export default class TwitterAPI {
         ...commonParams,
         ...commonDMParams,
         filter_low_quality: 'false',
-        max_id,
+        ...pagination,
         ext: EXT,
       },
     })
