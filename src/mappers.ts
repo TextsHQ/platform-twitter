@@ -319,7 +319,7 @@ export function mapEvent(event: any): ServerEvent {
   // if (payloadType === 'dm_update') return null
 }
 
-export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): ServerEvent {
+export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): ServerEvent | ServerEvent[] {
   const [entryType] = Object.keys(entryObj)
   const entry = entryObj[entryType]
   const threadID = entry.conversation_id
@@ -359,13 +359,16 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
   }
   if (entryType === MessageType.REACTION_CREATE) {
     const reaction = mapReaction(entry)
-    return {
+    return [{
       type: ServerEventType.STATE_SYNC,
       mutationType: 'created',
       objectName: 'message_reaction',
       objectID: [threadID, entry.message_id, reaction.id],
       data: reaction,
-    }
+    }, {
+      type: ServerEventType.THREAD_MESSAGES_REFRESH,
+      threadID,
+    }]
   }
   if (entryType === MessageType.REACTION_DELETE) {
     return {
