@@ -222,6 +222,10 @@ export default class Twitter implements PlatformAPI {
   private sendTextMessage = async (threadID: string, text: string, { pendingMessageID }: MessageSendOptions) => {
     const { entries, errors } = await this.api.dm_new(text, threadID, pendingMessageID)
     if (IS_DEV) console.log(entries, errors)
+    // [ { message: 'Over capacity', code: 130 } ]
+    if (errors) {
+      throw new Error((errors as any[]).map(err => err.message).join(', '))
+    }
     const mapped = (entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
     return mapped
   }
@@ -231,6 +235,9 @@ export default class Twitter implements PlatformAPI {
     if (!mediaID) return
     const { entries, errors } = await this.api.dm_new('', threadID, pendingMessageID, mediaID)
     if (IS_DEV) console.log(entries, errors)
+    if (errors) {
+      throw new Error((errors as any[]).map(err => err.message).join(', '))
+    }
     const mapped = (entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
     return mapped
   }
