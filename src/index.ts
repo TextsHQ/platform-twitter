@@ -4,7 +4,7 @@ import mem from 'mem'
 import { isEqual } from 'lodash'
 import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg } from '@textshq/platform-sdk'
 
-import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate } from './mappers'
+import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
 import TwitterAPI from './api'
 
 const { IS_DEV, Sentry } = texts
@@ -287,5 +287,10 @@ export default class Twitter implements PlatformAPI {
     } else {
       await this.api.dm_conversation_enable_notifications(threadID)
     }
+  }
+
+  getLinkPreview = async (linkURL: string) => {
+    const res = await this.api.cards_preview(linkURL)
+    return mapMessageLink(res.card)
   }
 }

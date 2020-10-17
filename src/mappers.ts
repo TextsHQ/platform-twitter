@@ -1,6 +1,6 @@
 import { orderBy, pick, maxBy, truncate } from 'lodash'
 import he from 'he'
-import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, MessageActionType, ServerEventType, UNKNOWN_DATE, texts } from '@textshq/platform-sdk'
+import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, MessageActionType, ServerEventType, UNKNOWN_DATE, texts, MessageLink } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
 
@@ -119,6 +119,18 @@ const getPhoto = (photo: any): MessageAttachment => ({
   size: pick(photo.original_info, ['width', 'height']),
 })
 
+export function mapMessageLink(card: any): MessageLink {
+  const bv = card.binding_values
+  const imgOriginal = bv?.thumbnail_image_large || bv?.thumbnail_image_original || bv?.player_image_original || bv?.event_thumbnail_original
+  return {
+    url: bv?.card_url?.string_value,
+    title: bv?.event_title?.string_value || bv?.title?.string_value,
+    summary: bv?.event_subtitle?.string_value || bv?.description?.string_value,
+    img: imgOriginal?.image_value?.url,
+    imgSize: { width: imgOriginal?.image_value?.width, height: imgOriginal?.image_value?.height },
+  }
+}
+
 export function mapMessage(m: any, currentUserID: string, threadParticipants: any): Message {
   const type = Object.keys(m)[0]
   const msg = m[type]
@@ -146,15 +158,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
     }
     const { video, photo, tweet, animated_gif, fleet, card } = msg.message_data.attachment || {}
     if (card) {
-      const bv = card.binding_values
-      const imgOriginal = bv?.thumbnail_image_large || bv?.thumbnail_image_original || bv?.player_image_original || bv?.event_thumbnail_original
-      mapped.link = {
-        url: bv?.card_url?.string_value,
-        title: bv?.event_title?.string_value || bv?.title?.string_value,
-        summary: bv?.event_subtitle?.string_value || bv?.description?.string_value,
-        img: imgOriginal?.image_value?.url,
-        imgSize: { width: imgOriginal?.image_value?.width, height: imgOriginal?.image_value?.height },
-      }
+      mapped.link = mapMessageLink(card)
     }
     if (tweet) {
       mapped.tweet = {
@@ -298,7 +302,7 @@ export function mapThreads(json: any, currentUser: any, inboxType: string): Thre
         items: messages,
         oldestCursor: t.min_entry_id,
       },
-      isUnread: +t.last_read_event_id < +lastMessage?.id,
+      isUnread: +t.last_read_event_id < +lastMessage?.id && !lastMessage?.isSender,
     }
   }).filter(Boolean)
 }

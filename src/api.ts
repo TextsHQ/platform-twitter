@@ -259,7 +259,7 @@ export default class TwitterAPI {
       referer: 'https://twitter.com/messages/compose',
     })
 
-  dm_new = (text: string, threadID: string, generatedMsgID: string, mediaID: string = undefined) => {
+  dm_new = (text: string, threadID: string, generatedMsgID: string, mediaID: string = undefined, includeLinkPreview = true) => {
     const form = {
       ...commonDMParams,
       text,
@@ -268,6 +268,7 @@ export default class TwitterAPI {
       recipient_ids: 'false',
       request_id: (generatedMsgID || uuid()).toUpperCase(),
       ext: EXT,
+      ...(includeLinkPreview ? {} : { card_uri: 'tombstone://card' }),
     }
     if (!form.media_id) delete form.media_id
     return this.fetch({
@@ -452,5 +453,17 @@ export default class TwitterAPI {
       url: `${ENDPOINT}1.1/dm/conversation/${threadID}/enable_notifications.json`,
       referer: `https://twitter.com/messages/${threadID}`,
       form: {},
+    })
+
+  cards_preview = (linkURL: string) =>
+    this.fetch({
+      method: 'POST',
+      url: 'https://caps.twitter.com/v2/cards/preview.json',
+      referer: 'https://twitter.com/',
+      searchParams: {
+        status: linkURL,
+        cards_platform: 'Web-12',
+        include_cards: true,
+      },
     })
 }
