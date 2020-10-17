@@ -26,6 +26,7 @@ const info: Platform = {
     Attribute.SUBSCRIBE_TO_THREAD_SELECTION,
     Attribute.SUPPORTS_REQUESTS_INBOX,
     Attribute.SUPPORTS_GROUP_IMAGE_CHANGE,
+    Attribute.CAN_MESSAGE_USERNAME,
   ]),
   getUserProfileLink: ({ username }) =>
     username && `https://twitter.com/${username}`,
