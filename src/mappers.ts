@@ -1,12 +1,8 @@
 import { orderBy, pick, maxBy, truncate } from 'lodash'
 import he from 'he'
-import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, MessageActionType, ServerEventType, UNKNOWN_DATE, texts, MessageLink } from '@textshq/platform-sdk'
+import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, MessageActionType, ServerEventType, UNKNOWN_DATE, texts, MessageLink, TextEntity } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
-
-// function replaceSubstringInIndices(mainStr: string, start: number, end: number, insertStr: string) {
-//   return mainStr.substring(0, start) + insertStr + mainStr.substring(end)
-// }
 
 export function mapParticipant(user: any, participant: any): Participant {
   if (!user) return
@@ -131,6 +127,42 @@ export function mapMessageLink(card: any): MessageLink {
   }
 }
 
+function mapEntities(entities: any) {
+  if (!entities) return
+  return [
+    ...(entities?.urls as any[] || []).map(url => (
+      {
+        from: url.indices[0],
+        to: url.indices[1],
+        replaceWith: url.expanded_url.replace(/^https?:\/\//, ''),
+      }
+    )),
+    ...(entities?.hashtags as any[] || []).map(ht => (
+      {
+        from: ht.indices[0],
+        to: ht.indices[1],
+        link: `https://twitter.com/hashtag/${ht.text}?src=hashtag_click`,
+      }
+    )),
+    ...(entities?.symbols as any[] || []).map(symbol => (
+      {
+        from: symbol.indices[0],
+        to: symbol.indices[1],
+        link: `https://twitter.com/search?q=${encodeURIComponent(symbol.text)}&src=cashtag_click`,
+      }
+    )),
+    ...(entities?.user_mentions as any[] || []).map(mention => (
+      {
+        from: mention.indices[0],
+        to: mention.indices[1],
+        mentionedUser: {
+          id: mention.id_str,
+        },
+      }
+    )),
+  ]
+}
+
 export function mapMessage(m: any, currentUserID: string, threadParticipants: any): Message {
   const type = Object.keys(m)[0]
   const msg = m[type]
@@ -149,11 +181,8 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
   if (msg.message_data) {
     mapped.senderID = msg.message_data.sender_id
     mapped.text = msg.message_data.text
+    mapped.textEntities = mapEntities(msg.message_data.entities)
     if (mapped.text) {
-      (msg.message_data.entities?.urls as any[] || []).forEach(url => {
-        mapped.text = mapped.text.replace(url.url, url.expanded_url)
-        // mapped.text = replaceSubstringInIndices(mapped.text, url.indices[0], url.indices[1], url.expanded_url)
-      })
       mapped.text = he.decode(mapped.text)
     }
     const { video, photo, tweet, animated_gif, fleet, card } = msg.message_data.attachment || {}
