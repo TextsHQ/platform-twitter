@@ -12,8 +12,8 @@ export function mapParticipant(user: any, participant: any): Participant {
     fullName: user.name,
     imgURL: user.profile_image_url_https.replace('_normal', ''),
     isVerified: user.verified,
-    isAdmin: !!participant.is_admin,
     cannotMessage: user.is_dm_able === false,
+    isAdmin: !!participant.is_admin,
   }
 }
 
@@ -130,28 +130,28 @@ export function mapMessageLink(card: any): MessageLink {
 function mapEntities(entities: any) {
   if (!entities) return
   return [
-    ...(entities?.urls as any[] || []).map(url => (
+    ...(entities?.urls as any[] || []).map<TextEntity>(url => (
       {
         from: url.indices[0],
         to: url.indices[1],
         replaceWith: url.expanded_url.replace(/^https?:\/\//, ''),
       }
     )),
-    ...(entities?.hashtags as any[] || []).map(ht => (
+    ...(entities?.hashtags as any[] || []).map<TextEntity>(ht => (
       {
         from: ht.indices[0],
         to: ht.indices[1],
         link: `https://twitter.com/hashtag/${ht.text}?src=hashtag_click`,
       }
     )),
-    ...(entities?.symbols as any[] || []).map(symbol => (
+    ...(entities?.symbols as any[] || []).map<TextEntity>(symbol => (
       {
         from: symbol.indices[0],
         to: symbol.indices[1],
         link: `https://twitter.com/search?q=${encodeURIComponent(symbol.text)}&src=cashtag_click`,
       }
     )),
-    ...(entities?.user_mentions as any[] || []).map(mention => (
+    ...(entities?.user_mentions as any[] || []).map<TextEntity>(mention => (
       {
         from: mention.indices[0],
         to: mention.indices[1],
@@ -346,41 +346,14 @@ export function mapEvent(event: any): ServerEvent {
       typing: true,
       threadID,
       participantID,
-      durationMs: 3000,
+      durationMs: 3_000,
     }
   }
   // if (payloadType === 'dm_update') return null
 }
 
 export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): ServerEvent | ServerEvent[] {
-  const [entryType] = Object.keys(entryObj)
-  const entry = entryObj[entryType]
-  const threadID = entry.conversation_id
-  // if (entryType === MessageType.CONVERSATION_READ) {
-  //   return {
-  //     type: ServerEventType.THREAD_PROPS_UPDATED,
-  //     threadID,
-  //     props: { isUnread: false },
-  //   }
-  // }
-  if (entryType === MessageType.REMOVE_CONVERSATION) {
-    return {
-      type: ServerEventType.STATE_SYNC,
-      mutationType: 'deleted',
-      objectID: [threadID],
-      objectName: 'thread',
-    }
-  }
-  if ([
-    MessageType.MESSAGE,
-    MessageType.TRUST_CONVERSATION,
-    MessageType.PARTICIPANTS_JOIN,
-    MessageType.PARTICIPANTS_LEAVE,
-    MessageType.JOIN_CONVERSATION,
-    MessageType.CONVERSATION_AVATAR_UPDATE,
-    MessageType.CONVERSATION_NAME_UPDATE,
-    MessageType.WELCOME_MESSAGE,
-  ].includes(entryType as MessageType)) {
+  const getMessageCreated = (): ServerEvent => {
     const message = mapMessage(entryObj, currentUserID, json.user_events.conversations[threadID]?.participants)
     return {
       type: ServerEventType.STATE_SYNC,
@@ -390,26 +363,65 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
       data: message,
     }
   }
-  if (entryType === MessageType.REACTION_CREATE) {
-    const reaction = mapReaction(entry)
-    return [{
-      type: ServerEventType.STATE_SYNC,
-      mutationType: 'created',
-      objectName: 'message_reaction',
-      objectID: [threadID, entry.message_id, reaction.id],
-      data: reaction,
-    }, {
-      type: ServerEventType.THREAD_MESSAGES_REFRESH,
-      threadID,
-    }]
-  }
-  if (entryType === MessageType.REACTION_DELETE) {
-    return {
-      type: ServerEventType.STATE_SYNC,
-      mutationType: 'deleted',
-      objectName: 'message_reaction',
-      objectID: [threadID, entry.message_id, String(entry.sender_id)],
+  const [entryType] = Object.keys(entryObj)
+  const entry = entryObj[entryType]
+  const threadID = entry.conversation_id
+
+  switch (entryType) {
+    // case MessageType.CONVERSATION_READ:
+    //   return {
+    //     type: ServerEventType.THREAD_PROPS_UPDATED,
+    //     threadID,
+    //     props: { isUnread: false },
+    //   }
+
+    case MessageType.REMOVE_CONVERSATION:
+      return {
+        type: ServerEventType.STATE_SYNC,
+        mutationType: 'deleted',
+        objectID: [threadID],
+        objectName: 'thread',
+      }
+
+    case MessageType.MESSAGE:
+    case MessageType.PARTICIPANTS_JOIN:
+    case MessageType.PARTICIPANTS_LEAVE:
+    case MessageType.JOIN_CONVERSATION:
+    case MessageType.CONVERSATION_AVATAR_UPDATE:
+    case MessageType.CONVERSATION_NAME_UPDATE:
+    case MessageType.WELCOME_MESSAGE:
+      return getMessageCreated()
+
+    case MessageType.TRUST_CONVERSATION:
+      return [
+        {
+          type: ServerEventType.THREAD_TRUSTED,
+          threadID,
+        },
+        getMessageCreated(),
+      ]
+
+    case MessageType.REACTION_CREATE: {
+      const reaction = mapReaction(entry)
+      return [{
+        type: ServerEventType.STATE_SYNC,
+        mutationType: 'created',
+        objectName: 'message_reaction',
+        objectID: [threadID, entry.message_id, reaction.id],
+        data: reaction,
+      }, {
+        type: ServerEventType.THREAD_MESSAGES_REFRESH,
+        threadID,
+      }]
     }
+
+    case MessageType.REACTION_DELETE:
+      return {
+        type: ServerEventType.STATE_SYNC,
+        mutationType: 'deleted',
+        objectName: 'message_reaction',
+        objectID: [threadID, entry.message_id, String(entry.sender_id)],
+      }
   }
   texts.log(entryType, entry)
   console.log('unknown twitter entry', entryType)
