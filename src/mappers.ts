@@ -181,8 +181,13 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
   if (msg.message_data) {
     mapped.senderID = msg.message_data.sender_id
     mapped.text = msg.message_data.text
-    mapped.textEntities = mapEntities(msg.message_data.entities)
-    if (mapped.text) {
+    const entities = mapEntities(msg.message_data.entities)
+    if (entities.length > 0) {
+      mapped.textAttributes = {
+        entities,
+        heDecode: true,
+      }
+    } else {
       mapped.text = he.decode(mapped.text)
     }
     const { video, photo, tweet, animated_gif, fleet, card } = msg.message_data.attachment || {}
