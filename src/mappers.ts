@@ -182,7 +182,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
     mapped.senderID = msg.message_data.sender_id
     mapped.text = msg.message_data.text
     const entities = mapEntities(msg.message_data.entities)
-    if (entities.length > 0) {
+    if (entities?.length > 0) {
       mapped.textAttributes = {
         entities,
         heDecode: true,
