@@ -130,13 +130,14 @@ export function mapMessageLink(card: any): MessageLink {
 function mapEntities(entities: any) {
   if (!entities) return
   return [
-    ...(entities?.urls as any[] || []).map<TextEntity>(url => (
-      {
-        from: url.indices[0],
+    ...(entities?.urls as any[] || []).map<TextEntity>(url => {
+      const shouldRemove = url.expanded_url.startsWith('https://twitter.com/messages/media/')
+      return {
+        from: Math.max(0, url.indices[0] + (shouldRemove ? -1 : 0)),
         to: url.indices[1],
-        replaceWith: url.expanded_url.replace(/^https?:\/\//, ''),
+        replaceWith: shouldRemove ? '' : url.expanded_url.replace(/^https?:\/\//, ''),
       }
-    )),
+    }),
     ...(entities?.hashtags as any[] || []).map<TextEntity>(ht => (
       {
         from: ht.indices[0],
