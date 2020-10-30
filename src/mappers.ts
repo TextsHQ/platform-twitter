@@ -81,7 +81,7 @@ export const REACTION_MAP_TO_TWITTER = {
 const mapReaction = ({ sender_id: participantID, reaction_key }: any) => ({
   id: participantID,
   participantID,
-  reactionName: REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key,
+  reactionKey: REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key,
 })
 
 const mapReactions = (reactions: any[]) =>
@@ -176,7 +176,6 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
     isSender: false,
     senderID: null,
     text: null,
-    link: undefined,
     attachments: [],
   }
   if (msg.message_data) {
@@ -193,7 +192,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
     }
     const { video, photo, tweet, animated_gif, fleet, card } = msg.message_data.attachment || {}
     if (card) {
-      mapped.link = mapMessageLink(card)
+      mapped.links = [mapMessageLink(card)]
     }
     if (tweet) {
       mapped.tweet = {
@@ -279,7 +278,7 @@ function getReactionMessages(m: any, currentUserID: string) {
   return (msg.message_reactions as any[]).map<Message>(r => {
     const truncated = truncate(m.message_data?.text)
     const senderID = String(r.sender_id)
-    const reactionName = REACTION_MAP_TO_NORMALIZED[r.reaction_key] || r.reaction_key
+    const reactionKey = REACTION_MAP_TO_NORMALIZED[r.reaction_key] || r.reaction_key
     return {
       _original: r,
       id: r.id,
@@ -288,12 +287,12 @@ function getReactionMessages(m: any, currentUserID: string) {
       isSender: String(r.sender_id) === currentUserID,
       reactions: [],
       attachments: [],
-      text: `{{sender}} reacted with ${supportedReactions[reactionName]?.render || r.reaction_key}${truncated ? `: ${truncated}` : ''}`,
+      text: `{{sender}} reacted with ${supportedReactions[reactionKey]?.render || r.reaction_key}${truncated ? `: ${truncated}` : ''}`,
       action: {
         type: MessageActionType.MESSAGE_REACTION_CREATED,
         messageID: m.id,
         participantID: senderID,
-        reactionName,
+        reactionKey,
       },
       parseTemplate: true,
       isAction: true,

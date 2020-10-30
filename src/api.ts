@@ -1,469 +1,296 @@
-import got from 'got'
-import { v4 as uuid } from 'uuid'
-import EventSource from 'eventsource'
-import { CookieJar, Cookie } from 'tough-cookie'
-import FormData from 'form-data'
-import crypto from 'crypto'
-import bluebird from 'bluebird'
-import { texts, ReAuthError } from '@textshq/platform-sdk'
+import { promises as fs } from 'fs'
+import { CookieJar } from 'tough-cookie'
+import mem from 'mem'
+import { isEqual } from 'lodash'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg } from '@textshq/platform-sdk'
 
-const { constants, IS_DEV, Sentry } = texts
-const { USER_AGENT } = constants
+import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
+import TwitterAPI from './network-api'
 
-const randomBytes = bluebird.promisify(crypto.randomBytes)
+const { IS_DEV, Sentry } = texts
 
-const AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
+export default class Twitter implements PlatformAPI {
+  private readonly api = new TwitterAPI()
 
-const commonHeaders = {
-  'Accept-Language': 'en',
-  'Sec-Fetch-Dest': 'empty',
-  'Sec-Fetch-Mode': 'cors',
-  'Sec-Fetch-Site': 'same-site',
-  'User-Agent': USER_AGENT,
-}
+  private currentUser = null
 
-const staticFetchHeaders = {
-  Authorization: AUTHORIZATION,
-  Accept: '*/*',
-  'x-twitter-active-user': 'yes',
-  'x-twitter-auth-type': 'OAuth2Session',
-  'x-twitter-client-language': 'en',
-}
+  private livePipelineID: string = null
 
-const commonParams = {
-  include_profile_interstitial_type: '1',
-  include_blocking: '1',
-  include_blocked_by: '1',
-  include_followed_by: '1',
-  include_want_retweets: '1',
-  include_mute_edge: '1',
-  include_can_dm: '1',
-  include_can_media_tag: '1',
-  skip_status: '1',
-}
+  private subbedTopics: string[] = []
 
-const commonDMParams = {
-  cards_platform: 'Web-12',
-  include_cards: '1',
-  include_composer_source: 'true',
-  include_ext_alt_text: 'true',
-  include_reply_count: '1',
-  tweet_mode: 'extended',
-  dm_users: 'false',
-  include_groups: 'true',
-  include_inbox_timelines: 'true',
-  include_ext_media_color: 'true',
-  supports_reactions: 'true',
-}
+  private es: EventSource = null
 
-const EXT = 'mediaColor,altText,mediaStats,highlightedLabel,cameraMoment'
+  private userUpdatesCursor = null
 
-const ENDPOINT = 'https://api.twitter.com/'
-const UPLOAD_ENDPOINT = 'https://upload.twitter.com/'
+  // private userUpdatesIDs = {}
 
-const genCSRFToken = () =>
-  randomBytes(16).then(b => b.toString('hex'))
+  private disposed = false
 
-const CT0_MAX_AGE = 6 * 60 * 60
+  init = async (cookieJarJSON: string) => {
+    if (!cookieJarJSON) return
+    const cookieJar = CookieJar.fromJSON(cookieJarJSON)
+    await this.api.setLoginState(cookieJar)
+    await this.afterAuth()
+    if (!this.currentUser?.id_str) throw new ReAuthError()
+  }
 
-function handleErrors(url: string, statusCode: number, json: any) {
-  const firstError = json.errors[0]
-  // { errors: [ { code: 32, message: 'Could not authenticate you.' } ] }
-  if (firstError?.code === 32) throw new ReAuthError(firstError!.message)
-  console.log(url, statusCode, json.errors)
-  Sentry.captureException(Error(url), {
-    extra: {
-      errors: json.errors,
-    },
+  private processUserUpdates = (json: any) => {
+    this.userUpdatesCursor = json.user_events?.cursor
+    const events = (json.user_events?.entries as any[])?.flatMap(entryObj => mapUserUpdate(entryObj, this.currentUser.id_str, json))
+    if (events?.length > 0) this.onServerEvent?.(events)
+  }
+
+  private pollTimeout: NodeJS.Timeout
+
+  private pollUserUpdates = async () => {
+    clearTimeout(this.pollTimeout)
+    if (this.disposed) return
+    let increaseDelay = false
+    if (this.userUpdatesCursor) {
+      try {
+        const json = await this.api.dm_user_updates(this.userUpdatesCursor)
+        if (IS_DEV) console.log(JSON.stringify(json, null, 2))
+        if (json.user_events) {
+          this.processUserUpdates(json)
+        } else {
+          increaseDelay = true
+        }
+      } catch (err) {
+        increaseDelay = true
+        console.error('tw error', err)
+        Sentry.captureException(err)
+      }
+    } else {
+      texts.log('skipping polling bc !this.userUpdatesCursor')
+    }
+    // mapThreads(json.user_events, currentUser, inboxType)
+    // const { last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id } = json.user_events
+    // this.userUpdatesIDs = json.user_events
+    // await this.api.dm_update_last_seen_event_id({ last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id })
+    this.pollTimeout = setTimeout(this.pollUserUpdates, increaseDelay ? 60_000 : 8_000)
+  }
+
+  setupLivePipeline = () => {
+    this.es?.close()
+    this.es = this.api.live_pipeline_events(this.subbedTopics.join(','))
+    this.es.onopen = event => {
+      if (IS_DEV) console.log(new Date(), 'es open', event)
+    }
+    this.es.onmessage = event => {
+      const json = JSON.parse(event.data)
+      if (IS_DEV) console.log(new Date(), 'es', json)
+      if (json.topic === '/system/config') {
+        const { session_id } = json.payload.config
+        this.livePipelineID = session_id
+      } else {
+        const mapped = mapEvent(json)
+        if (mapped) this.onServerEvent?.([mapped])
+        else this.pollUserUpdates()
+      }
+    }
+    let errorCount = 0
+    this.es.onerror = event => {
+      if (this.es.readyState === this.es.CLOSED) {
+        console.error(new Date(), 'es closed, reconnecting')
+        Sentry.captureMessage(`twitter es reconnecting ${this.es.readyState}`)
+        this.setupLivePipeline()
+      }
+      console.error(new Date(), 'es error', event, ++errorCount)
+    }
+  }
+
+  private onServerEvent: OnServerEventCallback
+
+  subscribeToEvents = (onEvent: OnServerEventCallback): void => {
+    this.onServerEvent = onEvent
+    this.setupLivePipeline()
+    this.pollUserUpdates()
+  }
+
+  dispose = () => {
+    this.es?.close()
+    this.es = null
+    this.disposed = true
+    clearTimeout(this.pollTimeout)
+  }
+
+  onThreadSelected = async (threadID: string) => {
+    if (!this.livePipelineID) return
+    const toSubscribe = threadID ? [
+      '/dm_update/' + threadID,
+      '/dm_typing/' + threadID,
+    ] : []
+    if (toSubscribe.length === 0 && this.subbedTopics.length === 0) return
+    if (isEqual(toSubscribe, this.subbedTopics)) return
+    const { errors } = await this.api.live_pipeline_update_subscriptions(this.livePipelineID, toSubscribe, this.subbedTopics) || {}
+    // [ { code: 392, message: 'Session not found.' } ]
+    if (errors?.[0].code === 392) {
+      this.setupLivePipeline()
+    }
+    this.subbedTopics = toSubscribe
+  }
+
+  login = async ({ cookieJarJSON }): Promise<LoginResult> => {
+    await this.api.setLoginState(CookieJar.fromJSON(cookieJarJSON as any))
+    await this.afterAuth()
+    if (this.currentUser?.id_str) return { type: 'success' }
+    // { errors: [ { code: 32, message: 'Could not authenticate you.' } ] }
+    const errorMessages = this.currentUser?.errors?.map(e => e.message)?.join('\n')
+    return { type: 'error', errorMessage: errorMessages }
+  }
+
+  logout = () => this.api.account_logout()
+
+  serializeSession = () => this.api.cookieJar.toJSON()
+
+  afterAuth = async () => {
+    const response = await this.api.account_verify_credentials()
+    this.currentUser = response
+  }
+
+  getCurrentUser = () => mapCurrentUser(this.currentUser)
+
+  searchUsers = mem(async (typed: string) => {
+    const { users } = await this.api.typeahead(typed) || {}
+    return (users as any[] || []).map(u => mapParticipant(u, {}))
   })
-}
 
-export default class TwitterAPI {
-  csrfToken: string = ''
-
-  cookieJar: CookieJar = null
-
-  setCSRFTokenCookie = async () => {
-    const cookies = this.cookieJar.getCookiesSync('https://twitter.com/')
-    this.csrfToken = cookies.find(c => c.key === 'ct0')?.value
-    if (!this.csrfToken) {
-      this.csrfToken = await genCSRFToken()
-      const cookie = new Cookie({ key: 'ct0', value: this.csrfToken, secure: true, hostOnly: false, domain: 'twitter.com', maxAge: CT0_MAX_AGE })
-      this.cookieJar.setCookie(cookie, 'https://twitter.com/')
+  getThreads = async (inboxName: InboxName, { cursor, direction }: PaginationArg = { cursor: null, direction: null }): Promise<Paginated<Thread>> => {
+    const inboxType = {
+      [InboxName.NORMAL]: 'trusted',
+      [InboxName.REQUESTS]: 'untrusted',
+    }[inboxName]
+    let json = null
+    let timeline = null
+    if (cursor) {
+      json = await this.api.dm_inbox_timeline(inboxType, { [direction === 'before' ? 'max_id' : 'min_id']: cursor })
+      json = json.inbox_timeline
+      timeline = json
+    } else {
+      json = await this.api.dm_inbox_initial_state()
+      json = json.inbox_initial_state
+      timeline = json.inbox_timelines[inboxType]
+      if (!this.userUpdatesCursor) this.userUpdatesCursor = json.cursor
+    }
+    return {
+      items: mapThreads(json, this.currentUser, inboxType),
+      hasMore: timeline.status !== 'AT_END',
+      oldestCursor: timeline.min_entry_id,
+      newestCursor: timeline.max_entry_id,
     }
   }
 
-  setLoginState = async (cookieJar: CookieJar) => {
-    if (!cookieJar) throw TypeError()
-    this.cookieJar = cookieJar
-    await this.setCSRFTokenCookie()
-  }
-
-  fetch = async ({ headers = {}, referer, ...rest }) => {
-    if (!this.cookieJar) throw new Error('Twitter cookie jar not found')
-    if (IS_DEV) console.log('[TW] CALLING', rest.url)
-    await this.setCSRFTokenCookie()
-    const res = await got({
-      // http2: true,
-      throwHttpErrors: false,
-      cookieJar: this.cookieJar,
-      headers: {
-        'x-csrf-token': this.csrfToken,
-        ...staticFetchHeaders,
-        Referer: referer,
-        ...commonHeaders,
-        ...headers,
-      },
-      ...rest,
-    })
-    if (!res.body) return
-    const json = JSON.parse(res.body)
-    if (json.errors) {
-      handleErrors(res.url, res.statusCode, json)
+  getMessages = async (threadID: string, { cursor, direction }: PaginationArg = { cursor: null, direction: null }): Promise<Paginated<Message>> => {
+    const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, cursor ? { [direction === 'before' ? 'max_id' : 'min_id']: cursor } : {})
+    const entries = Object.values(conversation_timeline.entries || {})
+    const thread = conversation_timeline.conversations[threadID]
+    const items = mapMessages(entries, thread, this.currentUser.id_str)
+    return {
+      items,
+      hasMore: conversation_timeline.status !== 'AT_END',
+      oldestCursor: conversation_timeline.min_entry_id,
+      newestCursor: conversation_timeline.max_entry_id,
     }
-    return json
   }
 
-  // fetchStream = async ({ headers = {}, referer, ...rest }) => {
-  //   if (!this.cookieJar) throw new Error('Twitter cookie jar not found')
-  //   if (IS_DEV) console.log('[TW] CALLING', rest.url)
-  //   await this.setCSRFTokenCookie()
-  //   return got.stream({
-  //     // http2: true,
-  //     throwHttpErrors: false,
-  //     cookieJar: this.cookieJar,
-  //     headers: {
-  //       'x-csrf-token': this.csrfToken,
-  //       ...staticFetchHeaders,
-  //       Referer: referer,
-  //       ...commonHeaders,
-  //       ...headers,
-  //     },
-  //     ...rest,
-  //   })
-  // }
-
-  authenticatedGet = async (url: string) => {
-    if (!this.cookieJar) throw new Error('Not authorized')
-    await this.setCSRFTokenCookie()
-    return got({
-      // http2: true,
-      cookieJar: this.cookieJar,
-      responseType: 'buffer',
-      headers: {
-        Accept: 'image/webp,image/apng,image/*,*/*;q=0.8',
-        Referer: 'https://twitter.com/messages/',
-        ...commonHeaders,
-        'Sec-Fetch-Dest': 'image',
-        'Sec-Fetch-Mode': 'no-cors',
-        'Sec-Fetch-Site': 'same-site',
-      },
-      url,
-    })
+  createThread = async (userIDs: string[]) => {
+    if (userIDs.length === 0) return null
+    if (userIDs.length === 1) {
+      const [userID] = userIDs
+      const threadID = `${this.currentUser.id_str}-${userID}`
+      const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, undefined)
+      if (!conversation_timeline) return
+      if (IS_DEV) console.log(conversation_timeline)
+      return mapThreads(conversation_timeline, this.currentUser, 'trusted')[0]
+    }
+    // const json = await this.api.dm_conversation(userIDs)
+    // console.log(json)
+    // return mapThreads(conversation_timeline, this.currentUser, 'trusted')[0]
   }
 
-  media_upload_init = (referer: string, totalBytes: number, mimeType: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${UPLOAD_ENDPOINT}i/media/upload.json`,
-      searchParams: {
-        command: 'INIT',
-        total_bytes: totalBytes,
-        media_type: mimeType,
-        media_category: 'dm_image',
-      },
-      referer,
-    })
+  sendMessage = async (threadID: string, content: MessageContent, msgSendOptions: MessageSendOptions) => {
+    if (content.fileBuffer) {
+      return this.sendFileFromBuffer(threadID, content.fileBuffer, content.mimeType, msgSendOptions)
+    }
+    if (content.filePath) {
+      const buffer = await fs.readFile(content.filePath)
+      return this.sendFileFromBuffer(threadID, buffer, content.mimeType, msgSendOptions)
+    }
+    return this.sendTextMessage(threadID, content.text, msgSendOptions)
+  }
 
-  media_upload_append = (referer: string, mediaID: string, body: FormData) =>
-    this.fetch({
-      method: 'POST',
-      url: `${UPLOAD_ENDPOINT}i/media/upload.json`,
-      searchParams: {
-        command: 'APPEND',
-        media_id: mediaID,
-        segment_index: 0,
-      },
-      body,
-      referer,
-    })
+  private sendTextMessage = async (threadID: string, text: string, { pendingMessageID }: MessageSendOptions) => {
+    const { entries, errors } = await this.api.dm_new(text, threadID, pendingMessageID)
+    if (IS_DEV) console.log(entries, errors)
+    // [ { message: 'Over capacity', code: 130 } ]
+    if (errors) {
+      throw new Error((errors as any[]).map(err => err.message).join(', '))
+    }
+    const mapped = (entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
+    return mapped
+  }
 
-  media_upload_finalize = (referer: string, mediaID: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${UPLOAD_ENDPOINT}i/media/upload.json`,
-      searchParams: {
-        command: 'FINALIZE',
-        media_id: mediaID,
-      },
-      referer,
-    })
-
-  upload = async (threadID: string, buffer: Buffer, mimeType: string): Promise<string> => {
-    const totalBytes = buffer.length
-    const referer = `https://twitter.com/messages/${threadID}`
-    const res = await this.media_upload_init(referer, totalBytes, mimeType)
-    if (IS_DEV) console.log(res)
-    const { media_id_string: mediaID } = res
+  private sendFileFromBuffer = async (threadID: string, fileBuffer: Buffer, mimeType: string, { pendingMessageID }: MessageSendOptions) => {
+    const mediaID = await this.api.upload(threadID, fileBuffer, mimeType)
     if (!mediaID) return
-    const form = new FormData()
-    form.append('media', buffer)
-    await this.media_upload_append(referer, mediaID, form)
-    await this.media_upload_finalize(referer, mediaID)
-    return mediaID
-  }
-
-  live_pipeline_events = (topic = '') => this.cookieJar
-    && new EventSource(ENDPOINT + 'live_pipeline/events?topic=' + encodeURIComponent(topic), {
-      headers: {
-        Cookie: this.cookieJar.getCookieStringSync(ENDPOINT),
-        ...commonHeaders,
-      },
-    })
-
-  live_pipeline_update_subscriptions = (sessionID: string, subTopics: string[], unsubTopics: string[]) =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/live_pipeline/update_subscriptions`,
-      referer: 'https://twitter.com/',
-      headers: {
-        'livepipeline-session': sessionID,
-      },
-      form: {
-        sub_topics: subTopics.join(','),
-        unsub_topics: unsubTopics.join(','),
-      },
-    })
-
-  account_verify_credentials = () =>
-    this.fetch({
-      url: `${ENDPOINT}1.1/account/verify_credentials.json`,
-      referer: 'https://twitter.com/',
-    })
-
-  account_logout = () =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/account/logout.json`,
-      referer: 'https://twitter.com/logout',
-    })
-
-  typeahead = (q: string) =>
-    this.fetch({
-      url: `${ENDPOINT}1.1/search/typeahead.json`,
-      searchParams: {
-        q,
-        src: 'compose_message',
-        result_type: 'users',
-      },
-      referer: 'https://twitter.com/messages/compose',
-    })
-
-  dm_new = (text: string, threadID: string, generatedMsgID: string, mediaID: string = undefined, includeLinkPreview = true) => {
-    const form = {
-      ...commonDMParams,
-      text,
-      conversation_id: threadID,
-      media_id: mediaID,
-      recipient_ids: 'false',
-      request_id: (generatedMsgID || uuid()).toUpperCase(),
-      ext: EXT,
-      ...(includeLinkPreview ? {} : { card_uri: 'tombstone://card' }),
+    const { entries, errors } = await this.api.dm_new('', threadID, pendingMessageID, mediaID)
+    if (IS_DEV) console.log(entries, errors)
+    if (errors) {
+      throw new Error((errors as any[]).map(err => err.message).join(', '))
     }
-    if (!form.media_id) delete form.media_id
-    return this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/dm/new.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
-      form,
-    })
+    const mapped = (entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
+    return mapped
   }
 
-  dm_destroy = (threadID: string, messageID: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/dm/destroy.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
-      form: {
-        ...commonDMParams,
-        id: messageID,
-        request_id: uuid().toUpperCase(),
-      },
-    })
+  sendTypingIndicator = (threadID: string) =>
+    this.api.dm_conversation_typing(threadID)
 
-  dm_conversation_thread = (threadID: string, pagination: { min_id?: string, max_id?: string }) => {
-    const searchParams = {
-      ...commonParams,
-      ...commonDMParams,
-      include_conversation_info: 'true',
-      ...pagination,
-      context: 'FETCH_DM_CONVERSATION',
-      ext: EXT,
+  addReaction = (threadID: string, messageID: string, reactionKey: string) =>
+    this.api.dm_reaction_new(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)
+
+  removeReaction = (threadID: string, messageID: string, reactionKey: string) =>
+    this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)
+
+  sendReadReceipt = async (threadID: string, messageID: string) =>
+    this.api.dm_conversation_mark_read(threadID, messageID)
+
+  getAsset = async (key: string) => {
+    const url = Buffer.from(key, 'base64').toString()
+    const { body } = await this.api.authenticatedGet(url)
+    return body
+  }
+
+  deleteMessage = async (threadID: string, messageID: string) => {
+    const body = await this.api.dm_destroy(threadID, messageID)
+    return body === undefined
+  }
+
+  changeThreadTitle = async (threadID: string, newTitle: string) => {
+    const result = await this.api.dm_conversation_update_name(threadID, newTitle)
+    return result === undefined
+  }
+
+  changeThreadImage = async (threadID: string, imageBuffer: Buffer, mimeType: string) => {
+    const mediaID = await this.api.upload(threadID, imageBuffer, mimeType)
+    if (!mediaID) return
+    await this.api.dm_conversation_update_avatar(threadID, mediaID)
+  }
+
+  addParticipant = async (threadID: string, participantID: string) => {
+    await this.api.dm_conversation_add_participants(threadID, [participantID])
+    return true
+  }
+
+  muteThread = async (threadID: string, muted: boolean) => {
+    if (muted) {
+      await this.api.dm_conversation_disable_notifications(threadID)
+    } else {
+      await this.api.dm_conversation_enable_notifications(threadID)
     }
-    return this.fetch({
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
-      searchParams,
-    })
   }
 
-  dm_conversation = (participantIDs: string[]) => {
-    const searchParams = {
-      ...commonParams,
-      ...commonDMParams,
-      include_conversation_info: 'true',
-      participant_ids: participantIDs.join(','),
-    }
-    return this.fetch({
-      url: 'https://api.twitter.com/1.1/dm/conversation.json',
-      referer: 'https://twitter.com/messages/compose',
-      searchParams,
-    })
+  getLinkPreview = async (linkURL: string) => {
+    const res = await this.api.cards_preview(linkURL)
+    return mapMessageLink(res.card)
   }
-
-  dm_inbox_initial_state = () =>
-    this.fetch({
-      url: `${ENDPOINT}1.1/dm/inbox_initial_state.json`,
-      referer: 'https://twitter.com/messages',
-      searchParams: {
-        ...commonParams,
-        ...commonDMParams,
-        filter_low_quality: 'false',
-        ext: EXT,
-      },
-    })
-
-  dm_inbox_timeline = (inboxType: string, pagination: { min_id?: string, max_id?: string }) =>
-    this.fetch({
-      url: `${ENDPOINT}1.1/dm/inbox_timeline/${inboxType}.json`,
-      referer: 'https://twitter.com/messages',
-      searchParams: {
-        ...commonParams,
-        ...commonDMParams,
-        filter_low_quality: 'false',
-        ...pagination,
-        ext: EXT,
-      },
-    })
-
-  dm_user_updates = (cursor: string) =>
-    this.fetch({
-      url: `${ENDPOINT}1.1/dm/user_updates.json`,
-      referer: 'https://twitter.com/messages',
-      headers: {
-        'x-twitter-polling': 'true',
-      },
-      searchParams: {
-        ...commonDMParams,
-        cursor,
-        filter_low_quality: 'false',
-        ext: EXT,
-      },
-    })
-
-  dm_update_last_seen_event_id = ({ last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id }) =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/dm/update_last_seen_event_id.json`,
-      referer: 'https://twitter.com/messages',
-      form: {
-        last_seen_event_id,
-        trusted_last_seen_event_id,
-        untrusted_last_seen_event_id,
-      },
-    })
-
-  dm_reaction = (action: string, reactionName: string, threadID: string, messageID: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/dm/reaction/${action}.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
-      searchParams: {
-        reaction_key: reactionName,
-        conversation_id: threadID,
-        dm_id: messageID,
-      },
-    })
-
-  dm_reaction_new = (reactionName: string, threadID: string, messageID: string) =>
-    this.dm_reaction('new', reactionName, threadID, messageID)
-
-  dm_reaction_delete = (reactionName: string, threadID: string, messageID: string) =>
-    this.dm_reaction('delete', reactionName, threadID, messageID)
-
-  dm_conversation_mark_read = (threadID: string, messageID: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/mark_read.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
-      form: {
-        conversationId: threadID,
-        last_read_event_id: messageID,
-      },
-    })
-
-  dm_conversation_typing = (threadID: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/typing.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
-    })
-
-  dm_conversation_update_name = (threadID: string, title: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/update_name.json`,
-      referer: `https://twitter.com/messages/${threadID}/group-info`,
-      form: {
-        name: title,
-      },
-    })
-
-  dm_conversation_update_avatar = (threadID: string, avatarID: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/update_avatar.json`,
-      referer: `https://twitter.com/messages/${threadID}/group-info`,
-      form: {
-        avatar_id: avatarID,
-      },
-    })
-
-  dm_conversation_add_participants = (threadID: string, participantIDs: string[]) =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/add_participants.json`,
-      referer: `https://twitter.com/messages/${threadID}/group-info`,
-      form: {
-        participant_ids: participantIDs.join(','),
-      },
-    })
-
-  dm_conversation_disable_notifications = (threadID: string, duration = 0) =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/disable_notifications.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
-      form: { duration },
-    })
-
-  dm_conversation_enable_notifications = (threadID: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/enable_notifications.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
-      form: {},
-    })
-
-  cards_preview = (linkURL: string) =>
-    this.fetch({
-      method: 'POST',
-      url: 'https://caps.twitter.com/v2/cards/preview.json',
-      referer: 'https://twitter.com/',
-      searchParams: {
-        status: linkURL,
-        cards_platform: 'Web-12',
-        include_cards: true,
-      },
-    })
 }
