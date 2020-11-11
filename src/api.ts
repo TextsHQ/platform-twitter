@@ -9,10 +9,10 @@ import TwitterAPI from './network-api'
 
 const { IS_DEV, Sentry } = texts
 
-export default class Twitter implements PlatformAPI {
-  private readonly api = new TwitterAPI()
+class Live {
+  private readonly api: TwitterAPI
 
-  private currentUser = null
+  private readonly onLiveEvent: (json: any) => void
 
   private livePipelineID: string = null
 
@@ -20,11 +20,89 @@ export default class Twitter implements PlatformAPI {
 
   private es: EventSource = null
 
+  private subTimeout: NodeJS.Timeout
+
+  private subTtlMs = 120_000
+
+  constructor(api: TwitterAPI, onLiveEvent: (json: any) => void) {
+    this.api = api
+    this.onLiveEvent = onLiveEvent
+  }
+
+  setup() {
+    this.es?.close()
+    this.es = this.api.live_pipeline_events(this.subbedTopics.join(','))
+    this.es.onopen = event => {
+      if (IS_DEV) console.log(new Date(), 'es open', event)
+    }
+    this.es.onmessage = event => {
+      if (!event.data.startsWith('{')) {
+        if (IS_DEV) console.log('unknown data', event.data)
+        return
+      }
+      const json = JSON.parse(event.data)
+      if (IS_DEV) console.log(new Date(), 'es', json)
+      if (json.topic === '/system/config') {
+        const { session_id, subscription_ttl_millis } = json.payload.config
+        this.subTtlMs = subscription_ttl_millis
+        this.livePipelineID = session_id
+      } else {
+        this.onLiveEvent(json)
+      }
+    }
+    let errorCount = 0
+    this.es.onerror = event => {
+      if (this.es.readyState === this.es.CLOSED) {
+        console.error(new Date(), 'es closed, reconnecting')
+        Sentry.captureMessage(`twitter es reconnecting ${this.es.readyState}`)
+        this.setup()
+      }
+      console.error(new Date(), 'es error', event, ++errorCount)
+    }
+  }
+
+  async updateSubscriptions(unsubTopics: string[] = []) {
+    clearTimeout(this.subTimeout)
+    if (IS_DEV) {
+      console.log('updating subscriptions', this.subbedTopics, unsubTopics)
+    }
+    if (this.subbedTopics.length === 0 && unsubTopics.length === 0) return
+    const { errors } = await this.api.live_pipeline_update_subscriptions(this.livePipelineID, this.subbedTopics, unsubTopics) || {}
+    // [ { code: 392, message: 'Session not found.' } ]
+    if (errors?.[0].code === 392) {
+      this.setup()
+    }
+    this.subTimeout = setTimeout(() => this.updateSubscriptions(), this.subTtlMs)
+  }
+
+  setSubscriptions(subscribeTo: string[]) {
+    if (!this.livePipelineID) return
+    if (isEqual(subscribeTo, this.subbedTopics)) return
+    const unsubTopics = [...this.subbedTopics]
+    this.subbedTopics = subscribeTo
+    this.updateSubscriptions(unsubTopics)
+  }
+
+  dispose() {
+    this.es?.close()
+    this.es = null
+  }
+}
+
+export default class Twitter implements PlatformAPI {
+  private readonly api = new TwitterAPI()
+
+  private readonly live = new Live(this.api, this.onLiveEvent.bind(this))
+
+  private currentUser = null
+
   private userUpdatesCursor = null
 
   // private userUpdatesIDs = {}
 
   private disposed = false
+
+  private onServerEvent: OnServerEventCallback
 
   init = async (cookieJarJSON: string) => {
     if (!cookieJarJSON) return
@@ -70,64 +148,30 @@ export default class Twitter implements PlatformAPI {
     this.pollTimeout = setTimeout(this.pollUserUpdates, increaseDelay ? 60_000 : 8_000)
   }
 
-  setupLivePipeline = () => {
-    this.es?.close()
-    this.es = this.api.live_pipeline_events(this.subbedTopics.join(','))
-    this.es.onopen = event => {
-      if (IS_DEV) console.log(new Date(), 'es open', event)
-    }
-    this.es.onmessage = event => {
-      const json = JSON.parse(event.data)
-      if (IS_DEV) console.log(new Date(), 'es', json)
-      if (json.topic === '/system/config') {
-        const { session_id } = json.payload.config
-        this.livePipelineID = session_id
-      } else {
-        const mapped = mapEvent(json)
-        if (mapped) this.onServerEvent?.([mapped])
-        else this.pollUserUpdates()
-      }
-    }
-    let errorCount = 0
-    this.es.onerror = event => {
-      if (this.es.readyState === this.es.CLOSED) {
-        console.error(new Date(), 'es closed, reconnecting')
-        Sentry.captureMessage(`twitter es reconnecting ${this.es.readyState}`)
-        this.setupLivePipeline()
-      }
-      console.error(new Date(), 'es error', event, ++errorCount)
-    }
+  private onLiveEvent(json: any) {
+    const mapped = mapEvent(json)
+    if (mapped) this.onServerEvent?.([mapped])
+    else this.pollUserUpdates()
   }
-
-  private onServerEvent: OnServerEventCallback
 
   subscribeToEvents = (onEvent: OnServerEventCallback): void => {
     this.onServerEvent = onEvent
-    this.setupLivePipeline()
+    this.live.setup()
     this.pollUserUpdates()
   }
 
   dispose = () => {
-    this.es?.close()
-    this.es = null
+    this.live.dispose()
     this.disposed = true
     clearTimeout(this.pollTimeout)
   }
 
   onThreadSelected = async (threadID: string) => {
-    if (!this.livePipelineID) return
     const toSubscribe = threadID ? [
       '/dm_update/' + threadID,
       '/dm_typing/' + threadID,
     ] : []
-    if (toSubscribe.length === 0 && this.subbedTopics.length === 0) return
-    if (isEqual(toSubscribe, this.subbedTopics)) return
-    const { errors } = await this.api.live_pipeline_update_subscriptions(this.livePipelineID, toSubscribe, this.subbedTopics) || {}
-    // [ { code: 392, message: 'Session not found.' } ]
-    if (errors?.[0].code === 392) {
-      this.setupLivePipeline()
-    }
-    this.subbedTopics = toSubscribe
+    this.live.setSubscriptions(toSubscribe)
   }
 
   login = async ({ cookieJarJSON }): Promise<LoginResult> => {
