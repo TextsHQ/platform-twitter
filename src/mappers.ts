@@ -384,9 +384,17 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
       return {
         type: ServerEventType.STATE_SYNC,
         mutationType: 'deleted',
-        objectID: [threadID],
         objectName: 'thread',
+        objectID: [threadID],
       }
+
+    case MessageType.MESSAGE_DELETE:
+      return (entry.messages as any[])?.map<ServerEvent>(msg => ({
+        type: ServerEventType.STATE_SYNC,
+        mutationType: 'deleted',
+        objectName: 'message',
+        objectID: [threadID, msg.message_id],
+      }))
 
     case MessageType.MESSAGE:
     case MessageType.PARTICIPANTS_JOIN:
