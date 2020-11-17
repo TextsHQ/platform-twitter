@@ -1,5 +1,6 @@
 import { orderBy, pick, maxBy, truncate } from 'lodash'
 import he from 'he'
+import path from 'path'
 import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, MessageActionType, ServerEventType, UNKNOWN_DATE, texts, MessageLink, TextEntity } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
@@ -106,6 +107,7 @@ const getDynamicPhoto = (photo: any): MessageAttachment => ({
   id: photo.id_str,
   type: MessageAttachmentType.IMG,
   srcURL: `asset://${Buffer.from(photo.media_url_https).toString('base64')}`,
+  fileName: path.basename(photo.media_url_https),
   size: pick(photo.original_info, ['width', 'height']),
 })
 const getPhoto = (photo: any): MessageAttachment => ({
