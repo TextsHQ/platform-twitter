@@ -105,7 +105,7 @@ export default class TwitterAPI {
     if (IS_DEV) console.log('[TW] CALLING', rest.url)
     await this.setCSRFTokenCookie()
     const res = await got({
-      http2: true,
+      // http2: true,
       throwHttpErrors: false,
       cookieJar: this.cookieJar,
       headers: {
