@@ -6,7 +6,7 @@ import FormData from 'form-data'
 import crypto from 'crypto'
 import util from 'util'
 import { isEqual } from 'lodash'
-import { texts, ReAuthError } from '@textshq/platform-sdk'
+import { texts, ReAuthError, RateLimitError } from '@textshq/platform-sdk'
 
 const { constants, IS_DEV, Sentry } = texts
 const { USER_AGENT } = constants
@@ -119,6 +119,9 @@ export default class TwitterAPI {
     })
     if (!res.body) return
     const json = JSON.parse(res.body)
+    // if (res.statusCode === 429) {
+    //   throw new RateLimitError()
+    // }
     if (json.errors) {
       handleErrors(res.url, res.statusCode, json)
     }
