@@ -8,6 +8,8 @@ import util from 'util'
 import { isEqual } from 'lodash'
 import { texts, ReAuthError, RateLimitError } from '@textshq/platform-sdk'
 
+import { chunkBuffer, promiseDelay } from './util'
+
 const { constants, IS_DEV, Sentry } = texts
 const { USER_AGENT } = constants
 
@@ -57,10 +59,17 @@ const commonDMParams = {
   supports_reactions: 'true',
 }
 
+enum MEDIA_CATEGORY {
+  DM_IMAGE = 'dm_image',
+  DM_VIDEO = 'dm_video',
+  DM_GIF = 'dm_gif',
+}
+
 const EXT = 'mediaColor,altText,mediaStats,highlightedLabel,cameraMoment'
 
 const ENDPOINT = 'https://api.twitter.com/'
 const UPLOAD_ENDPOINT = 'https://upload.twitter.com/'
+const MAX_CHUNK_SIZE = 1 * 1024 * 1024
 
 const genCSRFToken = () =>
   randomBytes(16).then(b => b.toString('hex'))
@@ -77,6 +86,12 @@ function handleErrors(url: string, statusCode: number, json: any) {
       errors: json.errors,
     },
   })
+}
+
+function getMediaCategory(mimeType: string) {
+  if (mimeType === 'image/gif') return MEDIA_CATEGORY.DM_GIF
+  if (mimeType.startsWith('image')) return MEDIA_CATEGORY.DM_IMAGE
+  if (mimeType.startsWith('video')) return MEDIA_CATEGORY.DM_VIDEO
 }
 
 export default class TwitterAPI {
@@ -174,19 +189,19 @@ export default class TwitterAPI {
         command: 'INIT',
         total_bytes: totalBytes,
         media_type: mimeType,
-        media_category: 'dm_image',
+        media_category: getMediaCategory(mimeType),
       },
       referer,
     })
 
-  media_upload_append = (referer: string, mediaID: string, body: FormData) =>
+  media_upload_append = (referer: string, mediaID: string, body: FormData, segment_index: number) =>
     this.fetch({
       method: 'POST',
       url: `${UPLOAD_ENDPOINT}i/media/upload.json`,
       searchParams: {
         command: 'APPEND',
         media_id: mediaID,
-        segment_index: 0,
+        segment_index,
       },
       body,
       referer,
@@ -203,17 +218,51 @@ export default class TwitterAPI {
       referer,
     })
 
+  media_upload_status = (referer: string, mediaID: string) =>
+    this.fetch({
+      method: 'GET',
+      url: `${UPLOAD_ENDPOINT}i/media/upload.json`,
+      searchParams: {
+        command: 'STATUS',
+        media_id: mediaID,
+      },
+      referer,
+    })
+
+  waitForProcessing = async (finalizeResponse: any, mediaID: string, referer: string) => {
+    if (!finalizeResponse.processing_info) return
+    const PROCESSING_TIMEOUT = 20_000
+    let pi = finalizeResponse.processing_info
+    const start = Date.now()
+    while (pi?.state === 'pending' || pi?.state === 'in_progress') {
+      if ((Date.now() - start) > PROCESSING_TIMEOUT) throw Error('media processing taking longer than expected')
+      const wait = pi.check_after_secs * 1000
+      if (IS_DEV) console.log(`waiting ${wait}ms for ${mediaID}`)
+      await promiseDelay(wait)
+      const statusResponse = await this.media_upload_status(referer, mediaID)
+      if (IS_DEV) console.log('media_upload_status', statusResponse)
+      pi = statusResponse.processing_info
+    }
+  }
+
   upload = async (threadID: string, buffer: Buffer, mimeType: string): Promise<string> => {
     const totalBytes = buffer.length
     const referer = `https://twitter.com/messages/${threadID}`
-    const res = await this.media_upload_init(referer, totalBytes, mimeType)
-    if (IS_DEV) console.log(res)
-    const { media_id_string: mediaID } = res
+    const initResponse = await this.media_upload_init(referer, totalBytes, mimeType)
+    if (IS_DEV) console.log('media_upload_init', initResponse)
+    const { media_id_string: mediaID } = initResponse
     if (!mediaID) return
-    const form = new FormData()
-    form.append('media', buffer)
-    await this.media_upload_append(referer, mediaID, form)
-    await this.media_upload_finalize(referer, mediaID)
+    let checksum = 0
+    for (const [chunkIndex, chunk] of chunkBuffer(buffer, MAX_CHUNK_SIZE)) {
+      const form = new FormData()
+      form.append('media', chunk)
+      checksum += chunk.length
+      await this.media_upload_append(referer, mediaID, form, chunkIndex)
+    }
+    if (checksum !== buffer.length) throw Error(`assertion failed: ${checksum} !== ${buffer.length}`)
+    const finalizeResponse = await this.media_upload_finalize(referer, mediaID)
+    if (IS_DEV) console.log('media_upload_finalize', finalizeResponse)
+    await this.waitForProcessing(finalizeResponse, mediaID, referer)
     return mediaID
   }
 
