@@ -1,7 +1,24 @@
 import { orderBy, pick, maxBy, truncate } from 'lodash'
 import he from 'he'
 import path from 'path'
-import { Message, Thread, Participant, MessageReaction, MessageSeen, ServerEvent, MessageAttachment, CurrentUser, MessageAttachmentType, MessageActionType, ServerEventType, UNKNOWN_DATE, texts, MessageLink, TextEntity } from '@textshq/platform-sdk'
+import {
+  Message,
+  Thread,
+  Participant,
+  MessageReaction,
+  MessageSeen,
+  ServerEvent,
+  MessageAttachment,
+  CurrentUser,
+  MessageAttachmentType,
+  MessageActionType,
+  ServerEventType,
+  UNKNOWN_DATE,
+  texts,
+  MessageLink,
+  TextEntity,
+  MessageButton,
+} from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
 
@@ -228,6 +245,15 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
     if (fleet) {
       mapped.textHeading = 'Replied to fleet'
     }
+    const ctaButtons = (msg.message_data.ctas as any[])?.map<MessageButton>(cta => ({
+      label: cta.label,
+      linkURL: cta.url,
+    }))
+    const qrButtons = (msg.message_data.quick_reply?.options as any[])?.map<MessageButton>(qr => ({
+      label: qr.label,
+      linkURL: 'texts://fill-textarea?text=' + encodeURIComponent(qr.label),
+    }))
+    if (ctaButtons || qrButtons) mapped.buttons = [...(ctaButtons || []), ...(qrButtons || [])]
   } else {
     mapped.isAction = true
     mapped.parseTemplate = true
