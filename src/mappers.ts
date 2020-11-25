@@ -391,7 +391,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
     const message = mapMessage(entryObj, currentUserID, json.user_events.conversations[threadID]?.participants)
     return {
       type: ServerEventType.STATE_SYNC,
-      mutationType: 'created',
+      mutationType: 'upsert',
       objectName: 'message',
       objectID: [threadID, message.id],
       data: message,
@@ -412,7 +412,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
     case MessageType.REMOVE_CONVERSATION:
       return {
         type: ServerEventType.STATE_SYNC,
-        mutationType: 'deleted',
+        mutationType: 'delete',
         objectName: 'thread',
         objectID: [threadID],
       }
@@ -420,7 +420,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
     case MessageType.MESSAGE_DELETE:
       return (entry.messages as any[])?.map<ServerEvent>(msg => ({
         type: ServerEventType.STATE_SYNC,
-        mutationType: 'deleted',
+        mutationType: 'delete',
         objectName: 'message',
         objectID: [threadID, msg.message_id],
       }))
@@ -447,7 +447,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
       const reaction = mapReaction(entry)
       return [{
         type: ServerEventType.STATE_SYNC,
-        mutationType: 'created',
+        mutationType: 'upsert',
         objectName: 'message_reaction',
         objectID: [threadID, entry.message_id, reaction.id],
         data: reaction,
@@ -460,7 +460,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
     case MessageType.REACTION_DELETE:
       return {
         type: ServerEventType.STATE_SYNC,
-        mutationType: 'deleted',
+        mutationType: 'delete',
         objectName: 'message_reaction',
         objectID: [threadID, entry.message_id, String(entry.sender_id)],
       }
