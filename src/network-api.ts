@@ -530,7 +530,7 @@ export class LivePipeline {
 
   private subbedTopics: string[] = []
 
-  private es: EventSource = null
+  private es: EventSource
 
   private subTimeout: NodeJS.Timeout
 
@@ -584,7 +584,7 @@ export class LivePipeline {
     if (errors?.[0].code === 392) {
       this.setup()
     }
-    this.subTimeout = setTimeout(() => this.updateSubscriptions(), this.subTtlMs)
+    this.subTimeout = setTimeout(() => this.updateSubscriptions(), this.subTtlMs - 10)
   }
 
   setSubscriptions(subscribeTo: string[]) {
