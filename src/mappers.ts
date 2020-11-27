@@ -123,7 +123,7 @@ const getVideo = (video: any): MessageAttachment => ({
 const getDynamicPhoto = (photo: any): MessageAttachment => ({
   id: photo.id_str,
   type: MessageAttachmentType.IMG,
-  srcURL: `asset://${Buffer.from(photo.media_url_https).toString('base64')}`,
+  srcURL: `asset://$accountID/${Buffer.from(photo.media_url_https).toString('base64')}`,
   fileName: path.basename(photo.media_url_https),
   size: pick(photo.original_info, ['width', 'height']),
 })
@@ -393,8 +393,8 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
       type: ServerEventType.STATE_SYNC,
       mutationType: 'upsert',
       objectName: 'message',
-      objectID: [threadID, message.id],
-      data: message,
+      objectIDs: { threadID },
+      entries: [message],
     }
   }
   const [entryType] = Object.keys(entryObj)
@@ -414,7 +414,8 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
         type: ServerEventType.STATE_SYNC,
         mutationType: 'delete',
         objectName: 'thread',
-        objectID: [threadID],
+        objectIDs: { threadID },
+        entries: [threadID],
       }
 
     case MessageType.MESSAGE_DELETE:
@@ -422,7 +423,8 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
         type: ServerEventType.STATE_SYNC,
         mutationType: 'delete',
         objectName: 'message',
-        objectID: [threadID, msg.message_id],
+        objectIDs: { threadID },
+        entries: [msg.message_id],
       }))
 
     case MessageType.MESSAGE:
@@ -449,8 +451,12 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
         type: ServerEventType.STATE_SYNC,
         mutationType: 'upsert',
         objectName: 'message_reaction',
-        objectID: [threadID, entry.message_id, reaction.id],
-        data: reaction,
+        objectIDs: {
+          threadID,
+          messageID: entry.message_id,
+          reactionID: reaction.id,
+        },
+        entries: [reaction],
       }, {
         type: ServerEventType.THREAD_MESSAGES_REFRESH,
         threadID,
@@ -462,7 +468,11 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
         type: ServerEventType.STATE_SYNC,
         mutationType: 'delete',
         objectName: 'message_reaction',
-        objectID: [threadID, entry.message_id, String(entry.sender_id)],
+        objectIDs: {
+          threadID,
+          messageID: entry.message_id,
+        },
+        entries: [String(entry.sender_id)],
       }
   }
   texts.log(entryType, entry)
