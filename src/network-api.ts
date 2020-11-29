@@ -181,15 +181,16 @@ export default class TwitterAPI {
     })
   }
 
-  media_upload_init = (referer: string, totalBytes: number, mimeType: string) =>
+  media_upload_init = (referer: string, totalBytes: number, mimeType: string, mediaCategory = getMediaCategory(mimeType)) =>
     this.fetch({
       method: 'POST',
       url: `${UPLOAD_ENDPOINT}i/media/upload.json`,
       searchParams: {
         command: 'INIT',
         total_bytes: totalBytes,
+        // instead of total_bytes can have source_url: 'https://media1.giphy.com/media/v1.Y2lkPWU4MjZjOWZjOWUyY2FlY2QzMWJmZjFkODAyOWU0ZDEzN2JkMGYwOGZhZTQ3MjJkMQ/NEvPzZ8bd1V4Y/giphy.gif'
         media_type: mimeType,
-        media_category: getMediaCategory(mimeType),
+        media_category: mediaCategory,
       },
       referer,
     })
@@ -249,7 +250,7 @@ export default class TwitterAPI {
     const totalBytes = buffer.length
     const referer = `https://twitter.com/messages/${threadID}`
     const initResponse = await this.media_upload_init(referer, totalBytes, mimeType)
-    if (IS_DEV) console.log('media_upload_init', initResponse)
+    if (IS_DEV) console.log('media_upload_init', { referer, totalBytes, mimeType }, initResponse)
     const { media_id_string: mediaID } = initResponse
     if (!mediaID) return
     let checksum = 0
@@ -262,6 +263,7 @@ export default class TwitterAPI {
     if (checksum !== buffer.length) throw Error(`assertion failed: ${checksum} !== ${buffer.length}`)
     const finalizeResponse = await this.media_upload_finalize(referer, mediaID)
     if (IS_DEV) console.log('media_upload_finalize', finalizeResponse)
+    if (finalizeResponse.error) throw Error(`media_upload_finalize error: ${finalizeResponse.error}`)
     await this.waitForProcessing(finalizeResponse, mediaID, referer)
     return mediaID
   }

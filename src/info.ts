@@ -30,6 +30,9 @@ const info: PlatformInfo = {
     Attribute.SUPPORTS_GROUP_IMAGE_CHANGE,
     Attribute.CAN_MESSAGE_USERNAME,
   ]),
+  attachments: {
+    gifMimeType: 'image/gif',
+  },
   getUserProfileLink: ({ username }) =>
     username && `https://twitter.com/${username}`,
   mapMessage,
