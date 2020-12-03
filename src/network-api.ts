@@ -170,7 +170,7 @@ export default class TwitterAPI {
       cookieJar: this.cookieJar,
       responseType: 'buffer',
       headers: {
-        Accept: 'image/webp,image/apng,image/*,*/*;q=0.8',
+        Accept: 'image/webp,image/apng,image/*,*/*;q=0.8', // todo review for videos
         Referer: 'https://twitter.com/messages/',
         ...commonHeaders,
         'Sec-Fetch-Dest': 'image',

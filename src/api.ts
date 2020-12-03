@@ -54,8 +54,10 @@ export default class Twitter implements PlatformAPI {
         }
       } catch (err) {
         increaseDelay = true
-        console.error('tw error', err)
-        Sentry.captureException(err)
+        if (!(err.name === 'RequestError' && err.code === 'ENETDOWN')) {
+          console.error('tw error', err)
+          Sentry.captureException(err)
+        }
       }
     } else {
       texts.log('skipping polling bc !this.userUpdatesCursor')
