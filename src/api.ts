@@ -54,7 +54,8 @@ export default class Twitter implements PlatformAPI {
         }
       } catch (err) {
         increaseDelay = true
-        if (!(err.name === 'RequestError' && err.code === 'ENETDOWN')) {
+        const isOfflineError = err.name === 'RequestError' && (err.code === 'ENETDOWN' || err.code === 'EADDRNOTAVAIL')
+        if (!isOfflineError) {
           console.error('tw error', err)
           Sentry.captureException(err)
         }
