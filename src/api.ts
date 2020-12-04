@@ -176,11 +176,11 @@ export default class Twitter implements PlatformAPI {
 
   sendMessage = async (threadID: string, content: MessageContent, msgSendOptions: MessageSendOptions) => {
     if (content.fileBuffer) {
-      return this.sendFileFromBuffer(threadID, content.fileBuffer, content.mimeType, msgSendOptions)
+      return this.sendFileFromBuffer(threadID, content.text, content.fileBuffer, content.mimeType, msgSendOptions)
     }
     if (content.filePath) {
       const buffer = await fs.readFile(content.filePath)
-      return this.sendFileFromBuffer(threadID, buffer, content.mimeType, msgSendOptions)
+      return this.sendFileFromBuffer(threadID, content.text, buffer, content.mimeType, msgSendOptions)
     }
     return this.sendTextMessage(threadID, content.text, msgSendOptions)
   }
@@ -196,10 +196,10 @@ export default class Twitter implements PlatformAPI {
     return mapped
   }
 
-  private sendFileFromBuffer = async (threadID: string, fileBuffer: Buffer, mimeType: string, { pendingMessageID }: MessageSendOptions) => {
+  private sendFileFromBuffer = async (threadID: string, text: string, fileBuffer: Buffer, mimeType: string, { pendingMessageID }: MessageSendOptions) => {
     const mediaID = await this.api.upload(threadID, fileBuffer, mimeType)
     if (!mediaID) return
-    const { entries, errors } = await this.api.dm_new('', threadID, pendingMessageID, mediaID)
+    const { entries, errors } = await this.api.dm_new(text || '', threadID, pendingMessageID, mediaID)
     if (IS_DEV) console.log(entries, errors)
     if (errors) {
       throw new Error((errors as any[]).map(err => err.message).join(', '))

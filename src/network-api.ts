@@ -77,15 +77,23 @@ const genCSRFToken = () =>
 const CT0_MAX_AGE = 6 * 60 * 60
 
 function handleErrors(url: string, statusCode: number, json: any) {
-  const firstError = json.errors[0]
   // { errors: [ { code: 32, message: 'Could not authenticate you.' } ] }
-  if (firstError?.code === 32) throw new ReAuthError(firstError!.message)
+  const errors = json.errors as { code: number, message: string }[]
+  const loggedOutError = errors.find(e => e.code === 32)
+  if (loggedOutError) {
+    throw new ReAuthError(loggedOutError!.message)
+    // todo track reauth event
+  }
   console.log(url, statusCode, json.errors)
-  Sentry.captureException(Error(url), {
-    extra: {
-      errors: json.errors,
-    },
-  })
+  // [ { message: 'Over capacity', code: 130 } ]
+  const filteredErrors = errors.filter(err => err.code !== 130)
+  if (filteredErrors.length > 0) {
+    Sentry.captureException(Error(url), {
+      extra: {
+        errors: json.errors,
+      },
+    })
+  }
 }
 
 function getMediaCategory(mimeType: string) {

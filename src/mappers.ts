@@ -56,7 +56,7 @@ export function mapThread(thread: any, users: any, currentUserTw: any): Thread {
     u => u.id === currentUserTw.id_str,
   )
   const mapped: Thread = {
-    _original: thread,
+    _original: JSON.stringify(thread),
     id: thread.conversation_id,
     isReadOnly: thread.read_only,
     imgURL: thread.avatar_image_https,
@@ -187,7 +187,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
   const type = Object.keys(m)[0]
   const msg = m[type]
   const mapped: Message = {
-    _original: [m, currentUserID, threadParticipants],
+    _original: JSON.stringify([m, currentUserID, threadParticipants]),
     id: msg.id,
     timestamp: new Date(+msg.time),
     reactions: mapReactions(msg.message_reactions || []),
@@ -304,19 +304,19 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
 function getReactionMessages(m: any, currentUserID: string) {
   const msg = Object.values(m)[0] as any
   if (!msg.message_reactions) return []
-  return (msg.message_reactions as any[]).map<Message>(r => {
+  return (msg.message_reactions as any[]).map<Message>(reaction => {
     const truncated = truncate(m.message_data?.text)
-    const senderID = String(r.sender_id)
-    const reactionKey = REACTION_MAP_TO_NORMALIZED[r.reaction_key] || r.reaction_key
+    const senderID = String(reaction.sender_id)
+    const reactionKey = REACTION_MAP_TO_NORMALIZED[reaction.reaction_key] || reaction.reaction_key
     return {
-      _original: r,
-      id: r.id,
-      timestamp: new Date(+r.time),
+      _original: JSON.stringify(reaction),
+      id: reaction.id,
+      timestamp: new Date(+reaction.time),
       senderID,
-      isSender: String(r.sender_id) === currentUserID,
+      isSender: String(reaction.sender_id) === currentUserID,
       reactions: [],
       attachments: [],
-      text: `{{sender}} reacted with ${supportedReactions[reactionKey]?.render || r.reaction_key}${truncated ? `: ${truncated}` : ''}`,
+      text: `{{sender}} reacted with ${supportedReactions[reactionKey]?.render || reaction.reaction_key}${truncated ? `: ${truncated}` : ''}`,
       action: {
         type: MessageActionType.MESSAGE_REACTION_CREATED,
         messageID: m.id,
@@ -356,7 +356,7 @@ export function mapThreads(json: any, currentUser: any, inboxType: string): Thre
   return threads.map((t: any) => {
     if (t.trusted !== (inboxType === 'trusted')) return null
     const thread = mapThread(t, users, currentUser)
-    const messages = mapMessages(groupedMessages[t.conversation_id] || [], thread._original, currentUser.id_str)
+    const messages = mapMessages(groupedMessages[t.conversation_id] || [], t, currentUser.id_str)
     const lastMessage = messages[messages.length - 1]
     return {
       ...thread,
