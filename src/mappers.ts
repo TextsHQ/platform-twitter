@@ -357,7 +357,6 @@ export function mapThreads(json: any, currentUser: any, inboxType: string): Thre
     if (t.trusted !== (inboxType === 'trusted')) return null
     const thread = mapThread(t, users, currentUser)
     const messages = mapMessages(groupedMessages[t.conversation_id] || [], t, currentUser.id_str)
-    const lastMessage = messages[messages.length - 1]
     return {
       ...thread,
       messages: {
@@ -365,7 +364,7 @@ export function mapThreads(json: any, currentUser: any, inboxType: string): Thre
         items: messages,
         oldestCursor: t.min_entry_id,
       },
-      isUnread: +t.last_read_event_id < +lastMessage?.id && !lastMessage?.isSender,
+      isUnread: BigInt(t.last_read_event_id || 0) < BigInt(t.sort_event_id || 0),
     }
   }).filter(Boolean)
 }
@@ -388,7 +387,8 @@ export function mapEvent(event: any): ServerEvent {
 
 export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): ServerEvent | ServerEvent[] {
   const getMessageCreated = (): ServerEvent => {
-    const message = mapMessage(entryObj, currentUserID, json.user_events.conversations[threadID]?.participants)
+    const conv = json.user_events.conversations[threadID]
+    const message = mapMessage(entryObj, currentUserID, conv?.participants)
     return {
       type: ServerEventType.STATE_SYNC,
       mutationType: 'upsert',
@@ -402,12 +402,27 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
   const threadID = entry.conversation_id
 
   switch (entryType) {
-    // case MessageType.CONVERSATION_READ:
-    //   return {
-    //     type: ServerEventType.THREAD_PROPS_UPDATED,
-    //     threadID,
-    //     props: { isUnread: false },
-    //   }
+    case MessageType.CONVERSATION_READ: {
+      const conv = json.user_events.conversations[threadID]
+      if (BigInt(conv.last_read_event_id || 0) >= BigInt(conv.sort_event_id || 0)) {
+        return {
+          type: ServerEventType.STATE_SYNC,
+          mutationType: 'update',
+          objectName: 'thread',
+          objectIDs: { threadID },
+          entries: [
+            {
+              id: threadID,
+              isUnread: false,
+            },
+          ],
+        }
+      }
+      return {
+        type: ServerEventType.THREAD_MESSAGES_REFRESH,
+        threadID,
+      }
+    }
 
     case MessageType.REMOVE_CONVERSATION:
       return {
