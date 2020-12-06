@@ -296,7 +296,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
       return null
     }
   }
-  mapped.senderID = String(mapped.senderID)
+  if (mapped.senderID != null) mapped.senderID = String(mapped.senderID)
   mapped.isSender = mapped.senderID === String(currentUserID)
   return mapped
 }

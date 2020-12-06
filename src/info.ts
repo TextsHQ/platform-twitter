@@ -32,6 +32,8 @@ const info: PlatformInfo = {
   ]),
   attachments: {
     gifMimeType: 'image/gif',
+    noSupportForAudio: true,
+    noSupportForFiles: true,
   },
   getUserProfileLink: ({ username }) =>
     username && `https://twitter.com/${username}`,
