@@ -34,6 +34,7 @@ const info: PlatformInfo = {
     gifMimeType: 'image/gif',
     noSupportForAudio: true,
     noSupportForFiles: true,
+    supportsCaption: true,
   },
   getUserProfileLink: ({ username }) =>
     username && `https://twitter.com/${username}`,

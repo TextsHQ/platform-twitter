@@ -106,7 +106,7 @@ const mapReactions = (reactions: any[]) =>
   reactions.map<MessageReaction>(mapReaction)
 
 function getSeen(threadParticipants: any[] = [], msg: any): MessageSeen {
-  const result = {}
+  const result: { [userID: string]: Date } = {}
   threadParticipants.forEach(({ user_id, last_read_event_id }) => {
     if (!last_read_event_id || msg.id > last_read_event_id) return
     result[user_id] = UNKNOWN_DATE
