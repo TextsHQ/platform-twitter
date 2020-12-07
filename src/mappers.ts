@@ -365,7 +365,7 @@ export function mapThreads(json: any, currentUser: any, inboxType: string): Thre
         items: messages,
         oldestCursor: t.min_entry_id,
       },
-      isUnread: BigInt(t.last_read_event_id || 0) < BigInt(lastMessage.id || 0) && !lastMessage.isSender,
+      isUnread: BigInt(t.last_read_event_id || 0) < BigInt(lastMessage?.id || 0) && !lastMessage?.isSender,
     }
   }).filter(Boolean)
 }
