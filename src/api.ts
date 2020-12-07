@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs'
 import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
-import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg } from '@textshq/platform-sdk'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType } from '@textshq/platform-sdk'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
 import TwitterAPI, { LivePipeline } from './network-api'
@@ -208,8 +208,9 @@ export default class Twitter implements PlatformAPI {
     return mapped
   }
 
-  sendTypingIndicator = (threadID: string) =>
-    this.api.dm_conversation_typing(threadID)
+  sendActivityIndicator = async (type: ActivityType, threadID: string) => {
+    if (type === ActivityType.TYPING) await this.api.dm_conversation_typing(threadID)
+  }
 
   addReaction = (threadID: string, messageID: string, reactionKey: string) =>
     this.api.dm_reaction_new(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)
