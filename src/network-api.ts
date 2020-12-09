@@ -554,6 +554,7 @@ export class LivePipeline {
   setup() {
     this.es?.close()
     this.es = this.api.live_pipeline_events(this.subbedTopics.join(','))
+    if (!this.es) return
     this.es.onopen = event => {
       if (IS_DEV) console.log(new Date(), 'es open', event)
     }
