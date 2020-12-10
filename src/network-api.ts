@@ -103,9 +103,11 @@ function getMediaCategory(mimeType: string) {
 }
 
 export default class TwitterAPI {
-  csrfToken: string = ''
+  private csrfToken: string = ''
 
   cookieJar: CookieJar = null
+
+  // private twitterBlocked = false
 
   setCSRFTokenCookie = async () => {
     const cookies = this.cookieJar.getCookiesSync('https://twitter.com/')
@@ -127,48 +129,41 @@ export default class TwitterAPI {
     if (!this.cookieJar) throw new Error('Twitter cookie jar not found')
     if (IS_DEV) console.log('[TW] CALLING', rest.url)
     await this.setCSRFTokenCookie()
-    const res = await got({
-      // http2: true,
-      throwHttpErrors: false,
-      cookieJar: this.cookieJar,
-      headers: {
-        'x-csrf-token': this.csrfToken,
-        ...staticFetchHeaders,
-        Referer: referer,
-        ...commonHeaders,
-        ...headers,
-      },
-      ...rest,
-    })
-    if (!res.body) return
-    const json = JSON.parse(res.body)
-    // if (res.statusCode === 429) {
-    //   throw new RateLimitError()
-    // }
-    if (json.errors) {
-      handleErrors(res.url, res.statusCode, json)
+    try {
+      const res = await got({
+        // http2: true,
+        throwHttpErrors: false,
+        cookieJar: this.cookieJar,
+        headers: {
+          'x-csrf-token': this.csrfToken,
+          ...staticFetchHeaders,
+          Referer: referer,
+          ...commonHeaders,
+          ...headers,
+        },
+        ...rest,
+        // ...(this.twitterBlocked ? { url: replaceHostname(rest.url) } : {}),
+      })
+      if (!res.body) return
+      const json = JSON.parse(res.body)
+      // if (res.statusCode === 429) {
+      //   throw new RateLimitError()
+      // }
+      if (json.errors) {
+        handleErrors(res.url, res.statusCode, json)
+      }
+      return json
+    } catch (err) {
+      if (err.code === 'ECONNREFUSED' && (err.message.endsWith('0.0.0.0:443') || err.message.endsWith('127.0.0.1:443'))) {
+        console.log('twitter is blocked')
+        throw Error('Twitter seems to be blocked on your device. This could have been done by an app or a manual entry in /etc/hosts')
+        // this.twitterBlocked = true
+        // await resolveHost(rest.url)
+        // return this.fetch({ headers, referer, ...rest })
+      }
+      throw err
     }
-    return json
   }
-
-  // fetchStream = async ({ headers = {}, referer, ...rest }) => {
-  //   if (!this.cookieJar) throw new Error('Twitter cookie jar not found')
-  //   if (IS_DEV) console.log('[TW] CALLING', rest.url)
-  //   await this.setCSRFTokenCookie()
-  //   return got.stream({
-  //     // http2: true,
-  //     throwHttpErrors: false,
-  //     cookieJar: this.cookieJar,
-  //     headers: {
-  //       'x-csrf-token': this.csrfToken,
-  //       ...staticFetchHeaders,
-  //       Referer: referer,
-  //       ...commonHeaders,
-  //       ...headers,
-  //     },
-  //     ...rest,
-  //   })
-  // }
 
   authenticatedGet = async (url: string) => {
     if (!this.cookieJar) throw new Error('Not authorized')

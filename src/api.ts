@@ -28,7 +28,7 @@ export default class Twitter implements PlatformAPI {
     const cookieJar = CookieJar.fromJSON(cookieJarJSON)
     await this.api.setLoginState(cookieJar)
     await this.afterAuth()
-    if (!this.currentUser?.id_str) throw new ReAuthError()
+    if (!this.currentUser?.id_str) throw new ReAuthError() // todo improve
   }
 
   private processUserUpdates = (json: any) => {
