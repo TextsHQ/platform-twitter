@@ -85,8 +85,9 @@ function handleErrors(url: string, statusCode: number, json: any) {
     // todo track reauth event
   }
   console.log(url, statusCode, json.errors)
-  // [ { message: 'Over capacity', code: 130 } ]
-  const filteredErrors = errors.filter(err => err.code !== 130)
+  // [ { code: 130, message: 'Over capacity' } ]
+  // [ { code: 392, message: 'Session not found.' } ]
+  const filteredErrors = errors.filter(err => err.code !== 130 && err.code !== 392)
   if (filteredErrors.length > 0) {
     Sentry.captureException(Error(url), {
       extra: {
