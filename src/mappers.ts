@@ -155,6 +155,7 @@ function mapEntities(entities: any) {
         from: Math.max(0, url.indices[0] + (shouldRemove ? -1 : 0)),
         to: url.indices[1],
         replaceWith: shouldRemove ? '' : url.expanded_url.replace(/^https?:\/\//, ''),
+        link: shouldRemove ? undefined : url.expanded_url,
       }
     }),
     ...(entities?.hashtags as any[] || []).map<TextEntity>(ht => (
@@ -215,10 +216,11 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
       mapped.links = [mapMessageLink(card)]
     }
     if (tweet) {
+      const tweetEntities = mapEntities(tweet.status.entities)
       mapped.tweet = {
         id: tweet.id,
         url: tweet.expanded_url,
-        text: he.decode(tweet.status.full_text),
+        text: tweet.status.full_text,
         timestamp: tweet.status.created_at,
         user: {
           name: tweet.status.user.name,
@@ -231,6 +233,14 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
           if (a.type === 'photo') return getPhoto(a)
           return null
         }).filter(Boolean),
+      }
+      if (tweetEntities?.length > 0) {
+        mapped.tweet.textAttributes = {
+          entities: tweetEntities,
+          heDecode: true,
+        }
+      } else {
+        mapped.tweet.text = he.decode(mapped.tweet.text)
       }
     }
     if (animated_gif) {
