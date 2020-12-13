@@ -181,6 +181,13 @@ function mapEntities(entities: any) {
         },
       }
     )),
+    ...(entities?.media as any[] || []).map<TextEntity>(mention => (
+      {
+        from: mention.indices[0],
+        to: mention.indices[1],
+        replaceWith: '',
+      }
+    )),
   ]
 }
 
