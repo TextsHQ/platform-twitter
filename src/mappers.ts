@@ -50,9 +50,9 @@ const MAP_THREAD_TYPE = {
   GROUP_DM: 'group',
 }
 
-export function mapThread(thread: any, users: any, currentUserTw: any): Thread {
+export function mapThread(thread: any, users: any = {}, currentUserTw: any): Thread {
   const participants = orderBy(
-    (thread.participants as any[]).map(p => mapParticipant(users[p.user_id], p)),
+    (thread.participants as any[]).map(p => mapParticipant(users[p.user_id], p)).filter(Boolean),
     u => u.id === currentUserTw.id_str,
   )
   const mapped: Thread = {
