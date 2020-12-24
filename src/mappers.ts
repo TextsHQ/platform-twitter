@@ -302,6 +302,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
         actorParticipantID: null,
       }
     } else if (type === MessageType.TRUST_CONVERSATION) {
+      mapped.senderID = currentUserID
       if (msg.reason === 'accept') {
         mapped.text = 'You accepted the request'
         mapped.action = { type: MessageActionType.MESSAGE_REQUEST_ACCEPTED }
