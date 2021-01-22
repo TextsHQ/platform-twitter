@@ -238,6 +238,10 @@ export default class Twitter implements PlatformAPI {
     return result === undefined
   }
 
+  deleteThread = async (threadID: string) => {
+    await this.api.dm_conversation_delete(threadID)
+  }
+
   changeThreadImage = async (threadID: string, imageBuffer: Buffer, mimeType: string) => {
     const mediaID = await this.api.upload(threadID, imageBuffer, mimeType)
     if (!mediaID) return

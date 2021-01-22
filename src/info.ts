@@ -28,6 +28,7 @@ const info: PlatformInfo = {
     Attribute.SUBSCRIBE_TO_THREAD_SELECTION,
     Attribute.SUPPORTS_REQUESTS_INBOX,
     Attribute.SUPPORTS_GROUP_IMAGE_CHANGE,
+    Attribute.SUPPORTS_DELETE_THREAD,
     Attribute.CAN_MESSAGE_USERNAME,
   ]),
   attachments: {

@@ -468,6 +468,14 @@ export default class TwitterAPI {
       referer: `https://twitter.com/messages/${threadID}`,
     })
 
+  dm_conversation_delete = (threadID: string) =>
+    this.fetch({
+      method: 'POST',
+      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/delete.json`,
+      referer: `https://twitter.com/messages/${threadID}`,
+      form: commonDMParams,
+    })
+
   dm_conversation_update_name = (threadID: string, title: string) =>
     this.fetch({
       method: 'POST',
