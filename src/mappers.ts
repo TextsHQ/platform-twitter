@@ -178,6 +178,7 @@ function mapEntities(entities: any) {
         to: mention.indices[1],
         mentionedUser: {
           id: mention.id_str,
+          username: mention.screen_name,
         },
       }
     )),
