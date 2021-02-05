@@ -123,7 +123,7 @@ const getVideo = (video: any): MessageAttachment => ({
 const getDynamicPhoto = (photo: any): MessageAttachment => ({
   id: photo.id_str,
   type: MessageAttachmentType.IMG,
-  srcURL: `asset://$accountID/${Buffer.from(photo.media_url_https).toString('base64')}`,
+  srcURL: `asset://$accountID/media/${Buffer.from(photo.media_url_https).toString('hex')}`,
   fileName: path.basename(photo.media_url_https),
   size: pick(photo.original_info, ['width', 'height']),
 })

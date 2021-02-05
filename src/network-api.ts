@@ -172,6 +172,7 @@ export default class TwitterAPI {
     return got({
       // http2: true,
       cookieJar: this.cookieJar,
+      resolveBodyOnly: true,
       responseType: 'buffer',
       headers: {
         Accept: 'image/webp,image/apng,image/*,*/*;q=0.8', // todo review for videos

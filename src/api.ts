@@ -221,10 +221,14 @@ export default class Twitter implements PlatformAPI {
   sendReadReceipt = async (threadID: string, messageID: string) =>
     this.api.dm_conversation_mark_read(threadID, messageID)
 
-  getAsset = async (key: string) => {
+  getAsset = async (key: string, hex?: string) => {
+    if (key === 'media') {
+      const url = Buffer.from(hex, 'hex').toString()
+      return this.api.authenticatedGet(url)
+    }
+    // for backwards compat
     const url = Buffer.from(key, 'base64').toString()
-    const { body } = await this.api.authenticatedGet(url)
-    return body
+    return this.api.authenticatedGet(url)
   }
 
   deleteMessage = async (threadID: string, messageID: string) => {
