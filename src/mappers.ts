@@ -205,7 +205,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
     senderID: null,
     text: null,
     attachments: [],
-    silent: !msg.affects_sort,
+    silent: msg.affects_sort === false,
   }
   if (msg.message_data) {
     mapped.senderID = msg.message_data.sender_id
