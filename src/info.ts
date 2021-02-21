@@ -29,6 +29,7 @@ const info: PlatformInfo = {
     Attribute.SUPPORTS_REQUESTS_INBOX,
     Attribute.SUPPORTS_GROUP_IMAGE_CHANGE,
     Attribute.SUPPORTS_DELETE_THREAD,
+    Attribute.SORT_MESSAGES_ON_PUSH,
     Attribute.CAN_MESSAGE_USERNAME,
   ]),
   attachments: {
