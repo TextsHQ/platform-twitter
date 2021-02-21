@@ -22,6 +22,15 @@ import {
 
 import { supportedReactions, MessageType } from './constants'
 
+const TWITTER_EPOCH = 1288834974657
+function getTimestampFromSnowflake(snowflake: string) {
+  if (!snowflake) return
+  const int = BigInt.asUintN(64, BigInt(snowflake))
+  // @ts-expect-error
+  const dateBits = Number(int >> 22n)
+  return new Date(dateBits + TWITTER_EPOCH)
+}
+
 export function mapParticipant(user: any, participant: any): Participant {
   if (!user) return
   return {
@@ -384,7 +393,7 @@ export function mapThreads(json: any, currentUser: any, inboxType: string): Thre
         items: messages,
         oldestCursor: t.min_entry_id,
       },
-      isUnread: BigInt(t.last_read_event_id || 0) < BigInt(lastMessage?.id || 0) && !lastMessage?.isSender,
+      isUnread: getTimestampFromSnowflake(t.last_read_event_id) < getTimestampFromSnowflake(lastMessage?.id) && !lastMessage?.isSender,
     }
   }).filter(Boolean)
 }
@@ -424,7 +433,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
   switch (entryType) {
     case MessageType.CONVERSATION_READ: {
       const conv = json.user_events.conversations[threadID]
-      if (BigInt(conv.last_read_event_id || 0) >= BigInt(conv.sort_event_id || 0)) {
+      if (getTimestampFromSnowflake(conv.last_read_event_id) >= getTimestampFromSnowflake(conv.sort_event_id)) {
         return {
           type: ServerEventType.STATE_SYNC,
           mutationType: 'update',
