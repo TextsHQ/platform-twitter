@@ -1,7 +1,6 @@
 import { MessageDeletionMode, Attribute, PlatformInfo } from '@textshq/platform-sdk'
 
 import { supportedReactions } from './constants'
-import { mapMessage } from './mappers'
 
 const info: PlatformInfo = {
   name: 'twitter',
@@ -40,7 +39,6 @@ const info: PlatformInfo = {
   },
   getUserProfileLink: ({ username }) =>
     username && `https://twitter.com/${username}`,
-  mapMessage,
 }
 
 export default info
