@@ -408,7 +408,7 @@ export function mapEvent(event: any): ServerEvent {
       typing: true,
       threadID,
       participantID,
-      durationMs: 3_000,
+      durationMs: 5_000,
     }
   }
   // if (payloadType === 'dm_update') return null
