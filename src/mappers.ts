@@ -41,6 +41,14 @@ export function mapParticipant(user: any, participant: any): Participant {
     isVerified: user.verified,
     cannotMessage: user.is_dm_able === false,
     isAdmin: !!participant.is_admin,
+    social: {
+      followers: { count: user.followers_count },
+      followingUsers: { count: user.friends_count },
+      bio: user.description,
+      following: user.following,
+      followedBy: user.followed_by,
+      coverImgURL: user.profile_banner_url,
+    },
   }
 }
 
