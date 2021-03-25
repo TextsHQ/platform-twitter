@@ -257,13 +257,14 @@ export default class Twitter implements PlatformAPI {
     return true
   }
 
-  muteThread = async (threadID: string, muted: boolean) => {
-    if (muted) {
-      await this.api.dm_conversation_disable_notifications(threadID)
-    } else {
-      await this.api.dm_conversation_enable_notifications(threadID)
-    }
-  }
+  // unused:
+  // muteThread = async (threadID: string, muted: boolean) => {
+  //   if (muted) {
+  //     await this.api.dm_conversation_disable_notifications(threadID)
+  //   } else {
+  //     await this.api.dm_conversation_enable_notifications(threadID)
+  //   }
+  // }
 
   getLinkPreview = async (linkURL: string) => {
     const res = await this.api.cards_preview(linkURL)
