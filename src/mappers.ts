@@ -31,6 +31,52 @@ function getTimestampFromSnowflake(snowflake: string) {
   return new Date(dateBits + TWITTER_EPOCH)
 }
 
+function mapEntities(entities: any) {
+  if (!entities) return
+  return [
+    ...(entities?.urls as any[] || []).map<TextEntity>(url => {
+      const shouldRemove = url.expanded_url.startsWith('https://twitter.com/messages/media/')
+      return {
+        from: Math.max(0, url.indices[0] + (shouldRemove ? -1 : 0)),
+        to: url.indices[1],
+        replaceWith: shouldRemove ? '' : url.expanded_url.replace(/^https?:\/\//, ''),
+        link: shouldRemove ? undefined : url.expanded_url,
+      }
+    }),
+    ...(entities?.hashtags as any[] || []).map<TextEntity>(ht => (
+      {
+        from: ht.indices[0],
+        to: ht.indices[1],
+        link: `https://twitter.com/hashtag/${ht.text}?src=hashtag_click`,
+      }
+    )),
+    ...(entities?.symbols as any[] || []).map<TextEntity>(symbol => (
+      {
+        from: symbol.indices[0],
+        to: symbol.indices[1],
+        link: `https://twitter.com/search?q=${encodeURIComponent(symbol.text)}&src=cashtag_click`,
+      }
+    )),
+    ...(entities?.user_mentions as any[] || []).map<TextEntity>(mention => (
+      {
+        from: mention.indices[0],
+        to: mention.indices[1],
+        mentionedUser: {
+          id: mention.id_str,
+          username: mention.screen_name,
+        },
+      }
+    )),
+    ...(entities?.media as any[] || []).map<TextEntity>(mention => (
+      {
+        from: mention.indices[0],
+        to: mention.indices[1],
+        replaceWith: '',
+      }
+    )),
+  ]
+}
+
 export function mapParticipant(user: any, participant: any): Participant {
   if (!user) return
   return {
@@ -44,7 +90,13 @@ export function mapParticipant(user: any, participant: any): Participant {
     social: {
       followers: { count: user.followers_count },
       followingUsers: { count: user.friends_count },
-      bio: user.description,
+      bio: {
+        text: user.description,
+        attributes: {
+          heDecode: true,
+          entities: mapEntities(user.entities?.description),
+        },
+      },
       following: user.following,
       followedBy: user.followed_by,
       coverImgURL: user.profile_banner_url,
@@ -161,52 +213,6 @@ export function mapMessageLink(card: any): MessageLink {
     img: imgOriginal?.image_value?.url,
     imgSize: { width: imgOriginal?.image_value?.width, height: imgOriginal?.image_value?.height },
   }
-}
-
-function mapEntities(entities: any) {
-  if (!entities) return
-  return [
-    ...(entities?.urls as any[] || []).map<TextEntity>(url => {
-      const shouldRemove = url.expanded_url.startsWith('https://twitter.com/messages/media/')
-      return {
-        from: Math.max(0, url.indices[0] + (shouldRemove ? -1 : 0)),
-        to: url.indices[1],
-        replaceWith: shouldRemove ? '' : url.expanded_url.replace(/^https?:\/\//, ''),
-        link: shouldRemove ? undefined : url.expanded_url,
-      }
-    }),
-    ...(entities?.hashtags as any[] || []).map<TextEntity>(ht => (
-      {
-        from: ht.indices[0],
-        to: ht.indices[1],
-        link: `https://twitter.com/hashtag/${ht.text}?src=hashtag_click`,
-      }
-    )),
-    ...(entities?.symbols as any[] || []).map<TextEntity>(symbol => (
-      {
-        from: symbol.indices[0],
-        to: symbol.indices[1],
-        link: `https://twitter.com/search?q=${encodeURIComponent(symbol.text)}&src=cashtag_click`,
-      }
-    )),
-    ...(entities?.user_mentions as any[] || []).map<TextEntity>(mention => (
-      {
-        from: mention.indices[0],
-        to: mention.indices[1],
-        mentionedUser: {
-          id: mention.id_str,
-          username: mention.screen_name,
-        },
-      }
-    )),
-    ...(entities?.media as any[] || []).map<TextEntity>(mention => (
-      {
-        from: mention.indices[0],
-        to: mention.indices[1],
-        replaceWith: '',
-      }
-    )),
-  ]
 }
 
 export function mapMessage(m: any, currentUserID: string, threadParticipants: any): Message {
