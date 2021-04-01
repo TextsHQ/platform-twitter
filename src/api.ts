@@ -121,11 +121,11 @@ export default class Twitter implements PlatformAPI {
     return (users as any[] || []).map(u => mapParticipant(u, {}))
   })
 
-  getThreads = async (inboxName: InboxName, { cursor, direction }: PaginationArg = { cursor: null, direction: null }): Promise<Paginated<Thread>> => {
+  getThreads = async (folderName: InboxName, { cursor, direction }: PaginationArg = { cursor: null, direction: null }): Promise<Paginated<Thread>> => {
     const inboxType = {
       [InboxName.NORMAL]: 'trusted',
       [InboxName.REQUESTS]: 'untrusted',
-    }[inboxName]
+    }[folderName]
     let json = null
     let timeline = null
     if (cursor) {
@@ -170,8 +170,7 @@ export default class Twitter implements PlatformAPI {
       return mapThreads(conversation_timeline, this.currentUser, 'trusted')[0]
     }
     // const json = await this.api.dm_conversation(userIDs)
-    // console.log(json)
-    // return mapThreads(conversation_timeline, this.currentUser, 'trusted')[0]
+    // return mapThreads(conversation_timeline, this.currentUser)[0]
   }
 
   sendMessage = async (threadID: string, content: MessageContent, msgSendOptions: MessageSendOptions) => {

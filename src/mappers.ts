@@ -18,6 +18,7 @@ import {
   MessageLink,
   TextEntity,
   MessageButton,
+  InboxName,
 } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
@@ -127,6 +128,7 @@ export function mapThread(thread: any, users: any = {}, currentUserTw: any): Thr
   const mapped: Thread = {
     _original: JSON.stringify(thread),
     id: thread.conversation_id,
+    folderName: thread.trusted ? InboxName.NORMAL : InboxName.REQUESTS,
     isReadOnly: thread.read_only,
     imgURL: thread.avatar_image_https,
     isUnread: null,
