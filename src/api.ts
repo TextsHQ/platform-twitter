@@ -121,7 +121,8 @@ export default class Twitter implements PlatformAPI {
     return (users as any[] || []).map(u => mapParticipant(u, {}))
   })
 
-  getThreads = async (folderName: InboxName, { cursor, direction }: PaginationArg = { cursor: null, direction: null }): Promise<Paginated<Thread>> => {
+  getThreads = async (folderName: InboxName, pagination: PaginationArg): Promise<Paginated<Thread>> => {
+    const { cursor, direction } = pagination || { cursor: null, direction: null }
     const inboxType = {
       [InboxName.NORMAL]: 'trusted',
       [InboxName.REQUESTS]: 'untrusted',
@@ -146,7 +147,8 @@ export default class Twitter implements PlatformAPI {
     }
   }
 
-  getMessages = async (threadID: string, { cursor, direction }: PaginationArg = { cursor: null, direction: null }): Promise<Paginated<Message>> => {
+  getMessages = async (threadID: string, pagination: PaginationArg): Promise<Paginated<Message>> => {
+    const { cursor, direction } = pagination || { cursor: null, direction: null }
     const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, cursor ? { [direction === 'before' ? 'max_id' : 'min_id']: cursor } : {})
     const entries = Object.values(conversation_timeline.entries || {})
     const thread = conversation_timeline.conversations[threadID]
