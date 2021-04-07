@@ -221,7 +221,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
   const type = Object.keys(m)[0]
   const msg = m[type]
   const mapped: Message = {
-    _original: JSON.stringify([m, currentUserID, threadParticipants]),
+    _original: JSON.stringify([m]),
     id: msg.id,
     timestamp: new Date(+msg.time),
     reactions: mapReactions(msg.message_reactions || []),
