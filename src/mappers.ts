@@ -392,13 +392,13 @@ function groupMessages(entries: any[]) {
   return messages
 }
 
-export function mapThreads(json: any, currentUser: any, inboxType: string): Thread[] {
+export function mapThreads(json: any, currentUser: any, inboxType?: string): Thread[] {
   if (!json) return []
   const { conversations, entries, users } = json
   const threads = Object.values(conversations || {})
   const groupedMessages = groupMessages(entries || [])
   return threads.map((t: any) => {
-    if (t.trusted !== (inboxType === 'trusted')) return null
+    if (inboxType && t.trusted !== (inboxType === 'trusted')) return null
     const thread = mapThread(t, users, currentUser)
     const messages = mapMessages(groupedMessages[t.conversation_id] || [], t, currentUser.id_str)
     const lastMessage = messages[messages.length - 1]

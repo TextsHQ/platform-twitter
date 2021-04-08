@@ -161,15 +161,19 @@ export default class Twitter implements PlatformAPI {
     }
   }
 
+  getThread = async (threadID: string) => {
+    const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, undefined)
+    if (!conversation_timeline) return
+    if (IS_DEV) console.log(conversation_timeline)
+    return mapThreads(conversation_timeline, this.currentUser)[0]
+  }
+
   createThread = async (userIDs: string[]) => {
     if (userIDs.length === 0) return null
     if (userIDs.length === 1) {
       const [userID] = userIDs
       const threadID = `${this.currentUser.id_str}-${userID}`
-      const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, undefined)
-      if (!conversation_timeline) return
-      if (IS_DEV) console.log(conversation_timeline)
-      return mapThreads(conversation_timeline, this.currentUser, 'trusted')[0]
+      return this.getThread(threadID)
     }
     // const json = await this.api.dm_conversation(userIDs)
     // return mapThreads(conversation_timeline, this.currentUser)[0]
