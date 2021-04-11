@@ -1,4 +1,3 @@
-import got from 'got'
 import { v4 as uuid } from 'uuid'
 import EventSource from 'eventsource'
 import { CookieJar, Cookie } from 'tough-cookie'
@@ -6,7 +5,7 @@ import FormData from 'form-data'
 import crypto from 'crypto'
 import util from 'util'
 import { isEqual } from 'lodash'
-import { texts, ReAuthError, RateLimitError } from '@textshq/platform-sdk'
+import { texts, FetchOptions, ReAuthError, RateLimitError } from '@textshq/platform-sdk'
 
 import { chunkBuffer, promiseDelay } from './util'
 
@@ -126,15 +125,20 @@ export default class TwitterAPI {
     await this.setCSRFTokenCookie()
   }
 
-  fetch = async ({ headers = {}, referer, ...rest }) => {
+  fetch = async ({ method = 'GET', headers = {}, referer, url, searchParams, form, body }: FetchOptions & {
+    referer?: string
+    url: string
+  }) => {
     if (!this.cookieJar) throw new Error('Twitter cookie jar not found')
-    if (IS_DEV) console.log('[TW] CALLING', rest.url)
+    if (IS_DEV) console.log('[TW] CALLING', url)
     await this.setCSRFTokenCookie()
     try {
-      const res = await got({
-        // http2: true,
-        throwHttpErrors: false,
+      const res = await texts.fetch(url, {
+        method,
         cookieJar: this.cookieJar,
+        searchParams,
+        form,
+        body,
         headers: {
           'x-csrf-token': this.csrfToken,
           ...staticFetchHeaders,
@@ -142,16 +146,15 @@ export default class TwitterAPI {
           ...commonHeaders,
           ...headers,
         },
-        ...rest,
-        // ...(this.twitterBlocked ? { url: replaceHostname(rest.url) } : {}),
+        // ...(this.twitterBlocked ? { url: replaceHostname(url) } : {}),
       })
-      if (!res.body) return
-      const json = JSON.parse(res.body)
+      if (!res.body.length) return
+      const json = JSON.parse(res.body.toString('utf-8'))
       // if (res.statusCode === 429) {
       //   throw new RateLimitError()
       // }
       if (json.errors) {
-        handleErrors(res.url, res.statusCode, json)
+        handleErrors(url, res.statusCode, json)
       }
       return json
     } catch (err) {
@@ -159,7 +162,7 @@ export default class TwitterAPI {
         console.log('twitter is blocked')
         throw Error('Twitter seems to be blocked on your device. This could have been done by an app or a manual entry in /etc/hosts')
         // this.twitterBlocked = true
-        // await resolveHost(rest.url)
+        // await resolveHost(url)
         // return this.fetch({ headers, referer, ...rest })
       }
       throw err
@@ -169,11 +172,8 @@ export default class TwitterAPI {
   authenticatedGet = async (url: string) => {
     if (!this.cookieJar) throw new Error('Not authorized')
     await this.setCSRFTokenCookie()
-    return got({
-      // http2: true,
+    const res = await texts.fetch(url, {
       cookieJar: this.cookieJar,
-      resolveBodyOnly: true,
-      responseType: 'buffer',
       headers: {
         Accept: 'image/webp,image/apng,image/*,*/*;q=0.8', // todo review for videos
         Referer: 'https://twitter.com/messages/',
@@ -182,8 +182,8 @@ export default class TwitterAPI {
         'Sec-Fetch-Mode': 'no-cors',
         'Sec-Fetch-Site': 'same-site',
       },
-      url,
     })
+    return res.body
   }
 
   media_upload_init = (referer: string, totalBytes: number, mimeType: string, mediaCategory = getMediaCategory(mimeType)) =>
@@ -531,7 +531,7 @@ export default class TwitterAPI {
       searchParams: {
         status: linkURL,
         cards_platform: 'Web-12',
-        include_cards: true,
+        include_cards: 'true',
       },
     })
 }
