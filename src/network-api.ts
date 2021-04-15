@@ -581,11 +581,11 @@ export class LivePipeline {
     let errorCount = 0
     this.es.onerror = event => {
       if (this.es.readyState === this.es.CLOSED) {
-        console.error(new Date(), 'es closed, reconnecting')
+        texts.error('[twitter]', new Date(), 'es closed, reconnecting')
         Sentry.captureMessage(`twitter es reconnecting ${this.es.readyState}`)
         this.setup()
       }
-      console.error(new Date(), 'es error', event, ++errorCount)
+      texts.error('[twitter]', new Date(), 'es error', event, ++errorCount)
     }
   }
 
