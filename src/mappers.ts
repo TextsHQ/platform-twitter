@@ -229,7 +229,6 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
     isSender: false,
     senderID: null,
     text: null,
-    attachments: [],
     silent: msg.affects_sort === false,
   }
   if (msg.message_data) {
@@ -277,12 +276,15 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
       }
     }
     if (animated_gif) {
+      mapped.attachments = mapped.attachments || []
       mapped.attachments.push({ ...getVideo(animated_gif), isGif: true })
     }
     if (video) {
+      mapped.attachments = mapped.attachments || []
       mapped.attachments.push(getVideo(video))
     }
     if (photo) {
+      mapped.attachments = mapped.attachments || []
       mapped.attachments.push(getDynamicPhoto(photo))
     }
     if (fleet) {
@@ -358,8 +360,6 @@ function getReactionMessages(m: any, currentUserID: string) {
       timestamp: new Date(+reaction.time),
       senderID,
       isSender: String(reaction.sender_id) === currentUserID,
-      reactions: [],
-      attachments: [],
       text: `{{sender}} reacted with ${supportedReactions[reactionKey]?.render || reaction.reaction_key}${truncated ? `: ${truncated}` : ''}`,
       action: {
         type: MessageActionType.MESSAGE_REACTION_CREATED,
