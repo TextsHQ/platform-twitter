@@ -256,6 +256,7 @@ export default class TwitterAPI {
     const referer = `https://twitter.com/messages/${threadID}`
     const initResponse = await this.media_upload_init(referer, totalBytes, mimeType)
     if (IS_DEV) console.log('media_upload_init', { referer, totalBytes, mimeType }, initResponse)
+    if (initResponse.error) throw Error(`media_upload_init error: ${initResponse.error}`)
     const { media_id_string: mediaID } = initResponse
     if (!mediaID) return
     let checksum = 0
