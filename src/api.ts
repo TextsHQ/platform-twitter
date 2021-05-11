@@ -47,7 +47,7 @@ export default class Twitter implements PlatformAPI {
       try {
         const json = await this.api.dm_user_updates(this.userUpdatesCursor)
         if (IS_DEV) console.log(JSON.stringify(json, null, 2))
-        if (json.user_events) {
+        if (json?.user_events) {
           this.processUserUpdates(json)
         } else {
           increaseDelay = true
