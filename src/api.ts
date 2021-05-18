@@ -262,6 +262,12 @@ export default class Twitter implements PlatformAPI {
     return true
   }
 
+  removeParticipant = async (threadID: string, participantID: string) => {
+    if (participantID !== this.currentUser.id_str) return
+    await this.deleteThread(threadID)
+    return true
+  }
+
   // unused:
   // muteThread = async (threadID: string, muted: boolean) => {
   //   if (muted) {
