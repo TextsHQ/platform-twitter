@@ -42,18 +42,23 @@ export default class Twitter implements PlatformAPI {
   private pollUserUpdates = async () => {
     clearTimeout(this.pollTimeout)
     if (this.disposed) return
-    let increaseDelay = false
+    let nextFetchTimeoutMs = 8_000
     if (this.userUpdatesCursor) {
       try {
-        const json = await this.api.dm_user_updates(this.userUpdatesCursor)
+        const { json, headers } = await this.api.dm_user_updates(this.userUpdatesCursor) || {}
         if (IS_DEV) console.log(JSON.stringify(json, null, 2))
         if (json?.user_events) {
           this.processUserUpdates(json)
+        } else if (json?.errors[0]?.code === 88) {
+          const rateLimitReset = headers['x-rate-limit-reset']
+          const resetMs = (+rateLimitReset * 1000) - Date.now()
+          nextFetchTimeoutMs = resetMs
+          console.log('twitter poll user updates: rate limit exceeded, next fetch:', resetMs)
         } else {
-          increaseDelay = true
+          nextFetchTimeoutMs = 60_000
         }
       } catch (err) {
-        increaseDelay = true
+        nextFetchTimeoutMs = 60_000
         const isOfflineError = err.name === 'RequestError' && (err.code === 'ENETDOWN' || err.code === 'EADDRNOTAVAIL')
         if (!isOfflineError) {
           console.error('tw error', err)
@@ -67,7 +72,7 @@ export default class Twitter implements PlatformAPI {
     // const { last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id } = json.user_events
     // this.userUpdatesIDs = json.user_events
     // await this.api.dm_update_last_seen_event_id({ last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id })
-    this.pollTimeout = setTimeout(this.pollUserUpdates, increaseDelay ? 60_000 : 8_000)
+    this.pollTimeout = setTimeout(this.pollUserUpdates, nextFetchTimeoutMs)
   }
 
   private onLiveEvent(json: any) {
