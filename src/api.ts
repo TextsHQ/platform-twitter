@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs'
 import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
-import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType } from '@textshq/platform-sdk'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType } from '@textshq/platform-sdk'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
 import TwitterAPI, { LivePipeline } from './network-api'
@@ -144,8 +144,18 @@ export default class Twitter implements PlatformAPI {
       timeline = json.inbox_timelines[inboxType]
       if (!this.userUpdatesCursor) this.userUpdatesCursor = json.cursor
     }
+    const [threads, otherThreads] = mapThreads(json, this.currentUser, inboxType)
+    if (otherThreads?.length > 0) {
+      this.onServerEvent?.([{
+        type: ServerEventType.STATE_SYNC,
+        mutationType: 'upsert',
+        objectName: 'thread',
+        objectIDs: {},
+        entries: otherThreads,
+      }])
+    }
     return {
-      items: mapThreads(json, this.currentUser, inboxType),
+      items: threads,
       hasMore: timeline.status !== 'AT_END',
       oldestCursor: timeline.min_entry_id,
       newestCursor: timeline.max_entry_id,
@@ -170,7 +180,7 @@ export default class Twitter implements PlatformAPI {
     const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, undefined)
     if (!conversation_timeline) return
     if (IS_DEV) console.log(conversation_timeline)
-    return mapThreads(conversation_timeline, this.currentUser)[0]
+    return mapThreads(conversation_timeline, this.currentUser)[0][0]
   }
 
   createThread = async (userIDs: string[]) => {

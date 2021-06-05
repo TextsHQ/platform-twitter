@@ -392,13 +392,14 @@ function groupMessages(entries: any[]) {
   return messages
 }
 
-export function mapThreads(json: any, currentUser: any, inboxType?: string): Thread[] {
-  if (!json) return []
+export function mapThreads(json: any, currentUser: any, inboxType?: string): [Thread[], Thread[]] {
+  const otherThreads: Thread[] = []
+  const threads: Thread[] = []
+  if (!json) return [threads, otherThreads]
   const { conversations, entries, users } = json
-  const threads = Object.values(conversations || {})
+  const conversationValues = Object.values(conversations || {})
   const groupedMessages = groupMessages(entries || [])
-  return threads.map((t: any) => {
-    if (inboxType && t.trusted !== (inboxType === 'trusted')) return null
+  const map = (t: any) => {
     const thread = mapThread(t, users, currentUser)
     const messages = mapMessages(groupedMessages[t.conversation_id] || [], t, currentUser.id_str)
     const lastMessage = messages[messages.length - 1]
@@ -411,7 +412,12 @@ export function mapThreads(json: any, currentUser: any, inboxType?: string): Thr
       },
       isUnread: getTimestampFromSnowflake(t.last_read_event_id) < getTimestampFromSnowflake(lastMessage?.id) && !lastMessage?.isSender,
     }
-  }).filter(Boolean)
+  }
+  conversationValues.forEach((t: any) => {
+    if (inboxType && t.trusted !== (inboxType === 'trusted')) otherThreads.push(map(t))
+    else threads.push(map(t))
+  })
+  return [threads, otherThreads]
 }
 
 export function mapEvent(event: any): ServerEvent {
