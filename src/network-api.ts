@@ -1,5 +1,6 @@
 import { v4 as uuid } from 'uuid'
 import EventSource from 'eventsource'
+import { Jar, Client as HttpClient, Builder as ClientBuilder } from 'rust-fetch'
 import { CookieJar, Cookie } from 'tough-cookie'
 import FormData from 'form-data'
 import crypto from 'crypto'
@@ -21,7 +22,6 @@ const commonHeaders = {
   'Sec-Fetch-Dest': 'empty',
   'Sec-Fetch-Mode': 'cors',
   'Sec-Fetch-Site': 'same-site',
-  'User-Agent': USER_AGENT,
 }
 
 const staticFetchHeaders = {
@@ -110,6 +110,8 @@ export default class TwitterAPI {
 
   cookieJar: CookieJar = null
 
+  httpClient: HttpClient = null
+
   // private twitterBlocked = false
 
   setCSRFTokenCookie = async () => {
@@ -126,6 +128,14 @@ export default class TwitterAPI {
     if (!cookieJar) throw TypeError()
     this.cookieJar = cookieJar
     await this.setCSRFTokenCookie()
+
+    const jar = new Jar()
+      .useToughJar(this.cookieJar)
+
+    this.httpClient = new ClientBuilder()
+      .setJar(jar)
+      .setUserAgent(USER_AGENT)
+      .build()
   }
 
   fetch = async ({ method = 'GET', headers = {}, referer, url, searchParams, form, body, includeHeaders }: FetchOptions & {
@@ -137,7 +147,7 @@ export default class TwitterAPI {
     if (IS_DEV) console.log('[TW] CALLING', url)
     await this.setCSRFTokenCookie()
     try {
-      const res = await texts.fetch(url, {
+      const res = await this.httpClient.request(url, {
         method,
         cookieJar: this.cookieJar,
         searchParams,
@@ -152,8 +162,8 @@ export default class TwitterAPI {
         },
         // ...(this.twitterBlocked ? { url: replaceHostname(url) } : {}),
       })
-      if (!res.body.length) return
-      const json = JSON.parse(res.body.toString('utf-8'))
+      if (!res.body) return
+      const json = JSON.parse(res.body)
       // if (res.statusCode === 429) {
       //   throw new RateLimitError()
       // }

@@ -14,12 +14,12 @@
   },
   "dependencies": {
     "@textshq/platform-sdk": "link:../platform-sdk",
-    "rust-fetch": "link:../rust-fetch",
     "eventsource": "^1.0.7",
     "form-data": "^3.0.0",
     "he": "^1.2.0",
     "lodash": "^4.17.20",
     "mem": "^8.0.0",
+    "rust-fetch": "link:../rust-fetch",
     "tough-cookie": "^4.0.0",
     "uuid": "^8.3.1"
   },
