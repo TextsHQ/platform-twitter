@@ -122,20 +122,20 @@ export default class TwitterAPI {
       const cookie = new Cookie({ key: 'ct0', value: this.csrfToken, secure: true, hostOnly: false, domain: 'twitter.com', maxAge: CT0_MAX_AGE })
       this.cookieJar.setCookie(cookie, 'https://twitter.com/')
     }
+
+    const jar = new Jar()
+      .useToughJar(this.cookieJar, 'https://twitter.com')
+
+    this.httpClient = new ClientBuilder()
+      .setJar(jar)
+      .setUserAgent(USER_AGENT)
+      .build()
   }
 
   setLoginState = async (cookieJar: CookieJar) => {
     if (!cookieJar) throw TypeError()
     this.cookieJar = cookieJar
     await this.setCSRFTokenCookie()
-
-    const jar = new Jar()
-      .useToughJar(this.cookieJar)
-
-    this.httpClient = new ClientBuilder()
-      .setJar(jar)
-      .setUserAgent(USER_AGENT)
-      .build()
   }
 
   fetch = async ({ method = 'GET', headers = {}, referer, url, searchParams, form, body, includeHeaders }: FetchOptions & {
@@ -149,7 +149,6 @@ export default class TwitterAPI {
     try {
       const res = await this.httpClient.request(url, {
         method,
-        cookieJar: this.cookieJar,
         searchParams,
         form,
         body,
