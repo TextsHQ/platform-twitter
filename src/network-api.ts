@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid'
 import EventSource from 'eventsource'
-import { Jar, Client as HttpClient, Builder as ClientBuilder } from 'rust-fetch'
+import { Client as HttpClient, Builder as ClientBuilder } from 'rust-fetch'
 import { CookieJar, Cookie } from 'tough-cookie'
 import FormData from 'form-data'
 import crypto from 'crypto'
@@ -110,7 +110,7 @@ export default class TwitterAPI {
 
   cookieJar: CookieJar = null
 
-  httpClient: HttpClient = null
+  httpClient: HttpClient = new ClientBuilder().setUserAgent(USER_AGENT).build()
 
   // private twitterBlocked = false
 
@@ -122,14 +122,6 @@ export default class TwitterAPI {
       const cookie = new Cookie({ key: 'ct0', value: this.csrfToken, secure: true, hostOnly: false, domain: 'twitter.com', maxAge: CT0_MAX_AGE })
       this.cookieJar.setCookie(cookie, 'https://twitter.com/')
     }
-
-    const jar = new Jar()
-      .useToughJar(this.cookieJar, 'https://twitter.com')
-
-    this.httpClient = new ClientBuilder()
-      .setJar(jar)
-      .setUserAgent(USER_AGENT)
-      .build()
   }
 
   setLoginState = async (cookieJar: CookieJar) => {
@@ -150,6 +142,7 @@ export default class TwitterAPI {
       const res = await this.httpClient.request(url, {
         method,
         searchParams,
+        cookieJar: this.cookieJar,
         form,
         body,
         headers: {
