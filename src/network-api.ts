@@ -1,12 +1,12 @@
 import { v4 as uuid } from 'uuid'
 import EventSource from 'eventsource'
-import { Client as HttpClient, Builder as ClientBuilder } from 'rust-fetch'
+import { Client as HttpClient, RequestOptions } from 'rust-fetch'
 import { CookieJar, Cookie } from 'tough-cookie'
 import FormData from 'form-data'
 import crypto from 'crypto'
 import util from 'util'
 import { isEqual } from 'lodash'
-import { texts, FetchOptions, ReAuthError, RateLimitError } from '@textshq/platform-sdk'
+import { texts, ReAuthError, RateLimitError } from '@textshq/platform-sdk'
 
 import { chunkBuffer, promiseDelay } from './util'
 
@@ -22,6 +22,7 @@ const commonHeaders = {
   'Sec-Fetch-Dest': 'empty',
   'Sec-Fetch-Mode': 'cors',
   'Sec-Fetch-Site': 'same-site',
+  'User-Agent': USER_AGENT,
 }
 
 const staticFetchHeaders = {
@@ -110,7 +111,7 @@ export default class TwitterAPI {
 
   cookieJar: CookieJar = null
 
-  httpClient: HttpClient = new ClientBuilder().setUserAgent(USER_AGENT).build()
+  httpClient: HttpClient = new HttpClient()
 
   // private twitterBlocked = false
 
@@ -130,39 +131,36 @@ export default class TwitterAPI {
     await this.setCSRFTokenCookie()
   }
 
-  fetch = async ({ method = 'GET', headers = {}, referer, url, searchParams, form, body, includeHeaders }: FetchOptions & {
+  fetch = async (options: RequestOptions & {
     referer?: string
     url: string
     includeHeaders?: boolean
   }) => {
     if (!this.cookieJar) throw new Error('Twitter cookie jar not found')
-    if (IS_DEV) console.log('[TW] CALLING', url)
+    if (IS_DEV) console.log('[TW] CALLING', options.url)
     await this.setCSRFTokenCookie()
+
+    options.headers = {
+      'x-csrf-token': this.csrfToken,
+      ...staticFetchHeaders,
+      Referer: options.referer,
+      ...commonHeaders,
+      ...options.headers,
+    }
+
+    options.cookieJar = this.cookieJar
+
     try {
-      const res = await this.httpClient.request(url, {
-        method,
-        searchParams,
-        cookieJar: this.cookieJar,
-        form,
-        body,
-        headers: {
-          'x-csrf-token': this.csrfToken,
-          ...staticFetchHeaders,
-          Referer: referer,
-          ...commonHeaders,
-          ...headers,
-        },
-        // ...(this.twitterBlocked ? { url: replaceHostname(url) } : {}),
-      })
+      const res = await this.httpClient.request(options.url, options)
       if (!res.body) return
-      const json = JSON.parse(res.body)
+      const json = JSON.parse(res.body as string)
       // if (res.statusCode === 429) {
       //   throw new RateLimitError()
       // }
       if (json.errors) {
-        handleErrors(url, res.statusCode, json)
+        handleErrors(options.url, res.statusCode, json)
       }
-      if (includeHeaders) return { headers: res.headers, json }
+      if (options.includeHeaders) return { headers: res.headers, json }
       return json
     } catch (err) {
       if (err.code === 'ECONNREFUSED' && (err.message.endsWith('0.0.0.0:443') || err.message.endsWith('127.0.0.1:443'))) {
@@ -207,7 +205,7 @@ export default class TwitterAPI {
       referer,
     })
 
-  media_upload_append = (referer: string, mediaID: string, body: FormData, segment_index: number) =>
+  media_upload_append = (referer: string, mediaID: string, multipart: FormData, segment_index: number) =>
     this.fetch({
       method: 'POST',
       url: `${UPLOAD_ENDPOINT}i/media/upload.json`,
@@ -216,7 +214,7 @@ export default class TwitterAPI {
         media_id: mediaID,
         segment_index,
       },
-      body,
+      multipart,
       referer,
     })
 
