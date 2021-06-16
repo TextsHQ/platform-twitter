@@ -1,12 +1,11 @@
 import { v4 as uuid } from 'uuid'
 import EventSource from 'eventsource'
-import { Client as HttpClient, RequestOptions } from 'rust-fetch'
 import { CookieJar, Cookie } from 'tough-cookie'
 import FormData from 'form-data'
 import crypto from 'crypto'
 import util from 'util'
 import { isEqual } from 'lodash'
-import { texts, ReAuthError, RateLimitError } from '@textshq/platform-sdk'
+import { texts, ReAuthError, RateLimitError, FetchOptions } from '@textshq/platform-sdk'
 
 import { chunkBuffer, promiseDelay } from './util'
 
@@ -111,7 +110,7 @@ export default class TwitterAPI {
 
   cookieJar: CookieJar = null
 
-  httpClient: HttpClient = new HttpClient()
+  httpClient = texts.createHttpClient()
 
   // private twitterBlocked = false
 
@@ -131,7 +130,7 @@ export default class TwitterAPI {
     await this.setCSRFTokenCookie()
   }
 
-  fetch = async (options: RequestOptions & {
+  fetch = async (options: FetchOptions & {
     referer?: string
     url: string
     includeHeaders?: boolean
@@ -151,9 +150,9 @@ export default class TwitterAPI {
     options.cookieJar = this.cookieJar
 
     try {
-      const res = await this.httpClient.request(options.url, options)
+      const res = await this.httpClient.requestAsString(options.url, options)
       if (!res.body) return
-      const json = JSON.parse(res.body as string)
+      const json = JSON.parse(res.body)
       // if (res.statusCode === 429) {
       //   throw new RateLimitError()
       // }
@@ -205,7 +204,7 @@ export default class TwitterAPI {
       referer,
     })
 
-  media_upload_append = (referer: string, mediaID: string, multipart: FormData, segment_index: number) =>
+  media_upload_append = (referer: string, mediaID: string, body: FormData, segment_index: number) =>
     this.fetch({
       method: 'POST',
       url: `${UPLOAD_ENDPOINT}i/media/upload.json`,
@@ -214,7 +213,7 @@ export default class TwitterAPI {
         media_id: mediaID,
         segment_index,
       },
-      multipart,
+      body,
       referer,
     })
 

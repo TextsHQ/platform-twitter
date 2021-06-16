@@ -19,7 +19,6 @@
     "he": "^1.2.0",
     "lodash": "^4.17.20",
     "mem": "^8.0.0",
-    "rust-fetch": "link:../rust-fetch",
     "tough-cookie": "^4.0.0",
     "uuid": "^8.3.1"
   },
