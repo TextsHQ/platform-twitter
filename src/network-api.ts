@@ -5,7 +5,7 @@ import FormData from 'form-data'
 import crypto from 'crypto'
 import util from 'util'
 import { isEqual } from 'lodash'
-import { texts, FetchOptions, ReAuthError, RateLimitError } from '@textshq/platform-sdk'
+import { texts, ReAuthError, RateLimitError, FetchOptions } from '@textshq/platform-sdk'
 
 import { chunkBuffer, promiseDelay } from './util'
 
@@ -110,6 +110,8 @@ export default class TwitterAPI {
 
   cookieJar: CookieJar = null
 
+  httpClient = texts.createHttpClient()
+
   // private twitterBlocked = false
 
   setCSRFTokenCookie = async () => {
@@ -128,39 +130,36 @@ export default class TwitterAPI {
     await this.setCSRFTokenCookie()
   }
 
-  fetch = async ({ method = 'GET', headers = {}, referer, url, searchParams, form, body, includeHeaders }: FetchOptions & {
+  fetch = async (options: FetchOptions & {
     referer?: string
     url: string
     includeHeaders?: boolean
   }) => {
     if (!this.cookieJar) throw new Error('Twitter cookie jar not found')
-    if (IS_DEV) console.log('[TW] CALLING', url)
+    if (IS_DEV) console.log('[TW] CALLING', options.url)
     await this.setCSRFTokenCookie()
+
+    options.headers = {
+      'x-csrf-token': this.csrfToken,
+      ...staticFetchHeaders,
+      Referer: options.referer,
+      ...commonHeaders,
+      ...options.headers,
+    }
+
+    options.cookieJar = this.cookieJar
+
     try {
-      const res = await texts.fetch(url, {
-        method,
-        cookieJar: this.cookieJar,
-        searchParams,
-        form,
-        body,
-        headers: {
-          'x-csrf-token': this.csrfToken,
-          ...staticFetchHeaders,
-          Referer: referer,
-          ...commonHeaders,
-          ...headers,
-        },
-        // ...(this.twitterBlocked ? { url: replaceHostname(url) } : {}),
-      })
-      if (!res.body.length) return
-      const json = JSON.parse(res.body.toString('utf-8'))
+      const res = await this.httpClient.requestAsString(options.url, options)
+      if (!res.body) return
+      const json = JSON.parse(res.body)
       // if (res.statusCode === 429) {
       //   throw new RateLimitError()
       // }
       if (json.errors) {
-        handleErrors(url, res.statusCode, json)
+        handleErrors(options.url, res.statusCode, json)
       }
-      if (includeHeaders) return { headers: res.headers, json }
+      if (options.includeHeaders) return { headers: res.headers, json }
       return json
     } catch (err) {
       if (err.code === 'ECONNREFUSED' && (err.message.endsWith('0.0.0.0:443') || err.message.endsWith('127.0.0.1:443'))) {
@@ -177,7 +176,7 @@ export default class TwitterAPI {
   authenticatedGet = async (url: string) => {
     if (!this.cookieJar) throw new Error('Not authorized')
     await this.setCSRFTokenCookie()
-    const res = await texts.fetch(url, {
+    const res = await this.httpClient.requestAsBuffer(url, {
       cookieJar: this.cookieJar,
       headers: {
         Accept: 'image/webp,image/apng,image/*,*/*;q=0.8', // todo review for videos

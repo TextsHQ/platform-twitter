@@ -1,6 +1,6 @@
 {
   "name": "@textshq/platform-twitter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "dist/index.js",
   "scripts": {
     "postinstall": "yarn tsc || true",
@@ -15,7 +15,7 @@
   "dependencies": {
     "@textshq/platform-sdk": "link:../platform-sdk",
     "eventsource": "^1.0.7",
-    "form-data": "^3.0.0",
+    "form-data": "^4.0.0",
     "he": "^1.2.0",
     "lodash": "^4.17.20",
     "mem": "^8.0.0",
