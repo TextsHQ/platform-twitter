@@ -17,8 +17,6 @@ export default class Twitter implements PlatformAPI {
 
   private userUpdatesCursor = null
 
-  // private userUpdatesIDs = {}
-
   private disposed = false
 
   private onServerEvent: OnServerEventCallback
@@ -35,6 +33,8 @@ export default class Twitter implements PlatformAPI {
     this.userUpdatesCursor = json.user_events?.cursor
     const events = (json.user_events?.entries as any[])?.flatMap(entryObj => mapUserUpdate(entryObj, this.currentUser.id_str, json))
     if (events?.length > 0) this.onServerEvent?.(events)
+    // const { last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id } = json.user_events
+    // this.api.dm_update_last_seen_event_id({ last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id: undefined }).then(console.log)
   }
 
   private pollTimeout: NodeJS.Timeout
@@ -46,7 +46,7 @@ export default class Twitter implements PlatformAPI {
     if (this.userUpdatesCursor) {
       try {
         const { json, headers } = await this.api.dm_user_updates(this.userUpdatesCursor) || {}
-        if (IS_DEV) console.log(JSON.stringify(json, null, 2))
+        // if (IS_DEV) console.log(JSON.stringify(json, null, 2))
         if (json?.user_events) {
           this.processUserUpdates(json)
         } else if (json?.errors[0]?.code === 88) {
@@ -68,10 +68,6 @@ export default class Twitter implements PlatformAPI {
     } else {
       texts.log('skipping polling bc !this.userUpdatesCursor')
     }
-    // mapThreads(json.user_events, currentUser, inboxType)
-    // const { last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id } = json.user_events
-    // this.userUpdatesIDs = json.user_events
-    // await this.api.dm_update_last_seen_event_id({ last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id })
     this.pollTimeout = setTimeout(this.pollUserUpdates, nextFetchTimeoutMs)
   }
 
@@ -179,7 +175,7 @@ export default class Twitter implements PlatformAPI {
   getThread = async (threadID: string) => {
     const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, undefined)
     if (!conversation_timeline) return
-    if (IS_DEV) console.log(conversation_timeline)
+    // if (IS_DEV) console.log(conversation_timeline)
     return mapThreads(conversation_timeline, this.currentUser)[0][0]
   }
 
@@ -238,7 +234,7 @@ export default class Twitter implements PlatformAPI {
   removeReaction = (threadID: string, messageID: string, reactionKey: string) =>
     this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)
 
-  sendReadReceipt = async (threadID: string, messageID: string) =>
+  sendReadReceipt = (threadID: string, messageID: string) =>
     this.api.dm_conversation_mark_read(threadID, messageID)
 
   getAsset = async (key: string, hex?: string) => {

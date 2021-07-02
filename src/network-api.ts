@@ -427,7 +427,7 @@ export default class TwitterAPI {
       },
     })
 
-  dm_update_last_seen_event_id = ({ last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id }) =>
+  dm_update_last_seen_event_id = ({ last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id = undefined }) =>
     this.fetch({
       method: 'POST',
       url: `${ENDPOINT}1.1/dm/update_last_seen_event_id.json`,
