@@ -475,6 +475,37 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
       }
     }
 
+    case MessageType.DISABLE_NOTIFICATIONS: {
+      const conv = json.user_events.conversations[threadID]
+      return {
+        type: ServerEventType.STATE_SYNC,
+        mutationType: 'update',
+        objectName: 'thread',
+        objectIDs: { threadID },
+        entries: [
+          {
+            id: threadID,
+            mutedUntil: conv?.mute_expiration_time ? new Date(+conv?.mute_expiration_time) : 'forever',
+          },
+        ],
+      }
+    }
+
+    case MessageType.ENABLE_NOTIFICATIONS: {
+      return {
+        type: ServerEventType.STATE_SYNC,
+        mutationType: 'update',
+        objectName: 'thread',
+        objectIDs: { threadID },
+        entries: [
+          {
+            id: threadID,
+            mutedUntil: undefined,
+          },
+        ],
+      }
+    }
+
     case MessageType.REMOVE_CONVERSATION:
       return {
         type: ServerEventType.STATE_SYNC,
