@@ -253,9 +253,16 @@ export default class Twitter implements PlatformAPI {
   }
 
   updateThread = async (threadID: string, updates: Partial<Thread>) => {
-    if (!('title' in updates)) return
-    const result = await this.api.dm_conversation_update_name(threadID, updates.title)
-    return result === undefined
+    if ('title' in updates) {
+      const result = await this.api.dm_conversation_update_name(threadID, updates.title)
+      return result === undefined
+    }
+    if ('mutedUntil' in updates) {
+      const result = await (updates.mutedUntil === 'forever'
+        ? this.api.dm_conversation_disable_notifications(threadID)
+        : this.api.dm_conversation_enable_notifications(threadID))
+      return result === undefined
+    }
   }
 
   deleteThread = async (threadID: string) => {
@@ -278,15 +285,6 @@ export default class Twitter implements PlatformAPI {
     await this.deleteThread(threadID)
     return true
   }
-
-  // unused:
-  // muteThread = async (threadID: string, muted: boolean) => {
-  //   if (muted) {
-  //     await this.api.dm_conversation_disable_notifications(threadID)
-  //   } else {
-  //     await this.api.dm_conversation_enable_notifications(threadID)
-  //   }
-  // }
 
   getLinkPreview = async (linkURL: string) => {
     const res = await this.api.cards_preview(linkURL)
