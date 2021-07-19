@@ -573,6 +573,6 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
       }
   }
   texts.log(entryType, entry)
-  console.log('unknown twitter entry', entryType)
+  texts.Sentry.captureMessage('unknown twitter entry: ' + entryType)
   return { type: ServerEventType.THREAD_MESSAGES_REFRESH, threadID }
 }
