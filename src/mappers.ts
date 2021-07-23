@@ -91,6 +91,7 @@ export function mapParticipant(user: any, participant: any): Participant {
     social: {
       followers: { count: user.followers_count },
       followingUsers: { count: user.friends_count },
+      website: user.url,
       bio: {
         text: user.description,
         attributes: {
