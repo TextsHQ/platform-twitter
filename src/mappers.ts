@@ -19,6 +19,7 @@ import {
   TextEntity,
   MessageButton,
   InboxName,
+  ActivityType,
 } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
@@ -427,8 +428,8 @@ export function mapEvent(event: any): ServerEvent {
   const { conversation_id: threadID, user_id: participantID } = event.payload[payloadType]
   if (payloadType === 'dm_typing') {
     return {
-      type: ServerEventType.PARTICIPANT_TYPING,
-      typing: true,
+      type: ServerEventType.USER_ACTIVITY,
+      activityType: ActivityType.TYPING,
       threadID,
       participantID,
       durationMs: 5_000,
