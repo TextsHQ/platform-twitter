@@ -553,7 +553,6 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
         objectIDs: {
           threadID,
           messageID: entry.message_id,
-          reactionID: reaction.id,
         },
         entries: [reaction],
       }, {
