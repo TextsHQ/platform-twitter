@@ -21,6 +21,7 @@ import {
   InboxName,
   ActivityType,
   Tweet,
+  MessageBehavior,
 } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
@@ -232,7 +233,9 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
     isSender: false,
     senderID: null,
     text: null,
-    silent: msg.affects_sort === false,
+  }
+  if (msg.affects_sort === false) {
+    mapped.behavior = MessageBehavior.SILENT
   }
   if (msg.message_data) {
     mapped.senderID = msg.message_data.sender_id
