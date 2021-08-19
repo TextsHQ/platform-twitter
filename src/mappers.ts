@@ -20,6 +20,7 @@ import {
   MessageButton,
   InboxName,
   ActivityType,
+  Tweet,
 } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
@@ -251,7 +252,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
     }
     if (tweet) {
       const tweetEntities = mapEntities(tweet.status.entities)
-      mapped.tweet = {
+      const messageTweet: Tweet = {
         id: tweet.id,
         url: tweet.expanded_url,
         text: tweet.status.full_text,
@@ -269,13 +270,14 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
         }).filter(Boolean),
       }
       if (tweetEntities?.length > 0) {
-        mapped.tweet.textAttributes = {
+        messageTweet.textAttributes = {
           entities: tweetEntities,
           heDecode: true,
         }
       } else {
-        mapped.tweet.text = he.decode(mapped.tweet.text)
+        messageTweet.text = he.decode(messageTweet.text)
       }
+      mapped.tweets = [messageTweet]
     }
     if (animated_gif) {
       mapped.attachments = mapped.attachments || []
