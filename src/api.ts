@@ -228,15 +228,15 @@ export default class Twitter implements PlatformAPI {
     if (type === ActivityType.TYPING) await this.api.dm_conversation_typing(threadID)
   }
 
-  private readonly handleReactionResult = (json: any) => {
+  private readonly handleJSONErrors = (json: any) => {
     if (json?.errors) throw Error(json.errors.map(e => `${e.code}: ${e.message}`).join(', '))
   }
 
   addReaction = (threadID: string, messageID: string, reactionKey: string) =>
-    this.api.dm_reaction_new(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID).then(this.handleReactionResult)
+    this.api.dm_reaction_new(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID).then(this.handleJSONErrors)
 
   removeReaction = (threadID: string, messageID: string, reactionKey: string) =>
-    this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID).then(this.handleReactionResult)
+    this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID).then(this.handleJSONErrors)
 
   sendReadReceipt = (threadID: string, messageID: string) =>
     this.api.dm_conversation_mark_read(threadID, messageID)
@@ -251,10 +251,8 @@ export default class Twitter implements PlatformAPI {
     return this.api.authenticatedGet(url)
   }
 
-  deleteMessage = async (threadID: string, messageID: string) => {
-    const body = await this.api.dm_destroy(threadID, messageID)
-    return body === undefined
-  }
+  deleteMessage = (threadID: string, messageID: string) =>
+    this.api.dm_destroy(threadID, messageID).then(this.handleJSONErrors)
 
   updateThread = async (threadID: string, updates: Partial<Thread>) => {
     if ('title' in updates) {
