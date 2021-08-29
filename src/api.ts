@@ -228,11 +228,15 @@ export default class Twitter implements PlatformAPI {
     if (type === ActivityType.TYPING) await this.api.dm_conversation_typing(threadID)
   }
 
+  private readonly handleReactionResult = (json: any) => {
+    if (json?.errors) throw Error(json.errors.map(e => `${e.code}: ${e.message}`).join(', '))
+  }
+
   addReaction = (threadID: string, messageID: string, reactionKey: string) =>
-    this.api.dm_reaction_new(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)
+    this.api.dm_reaction_new(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID).then(this.handleReactionResult)
 
   removeReaction = (threadID: string, messageID: string, reactionKey: string) =>
-    this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)
+    this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID).then(this.handleReactionResult)
 
   sendReadReceipt = (threadID: string, messageID: string) =>
     this.api.dm_conversation_mark_read(threadID, messageID)
