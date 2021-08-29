@@ -36,3 +36,5 @@ export enum MessageType {
   TYPING_INDICATOR = 'typing_indicator',
   WELCOME_MESSAGE = 'welcome_message_create',
 }
+
+export const NOTIFICATIONS_THREAD_ID = 'notifications'

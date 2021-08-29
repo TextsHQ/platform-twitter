@@ -1,10 +1,13 @@
-import { promises as fs } from 'fs'
+import path from 'path'
+import fsSync, { promises as fs } from 'fs'
 import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
-import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType } from '@textshq/platform-sdk'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, User, AccountInfo } from '@textshq/platform-sdk'
 
-import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
+import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate, mapMessageLink, mapNotification, mapTweetNotification } from './mappers'
 import TwitterAPI, { LivePipeline } from './network-api'
+import { NOTIFICATIONS_THREAD_ID } from './constants'
+import icons from './icons'
 
 const { IS_DEV, Sentry } = texts
 
@@ -21,8 +24,11 @@ export default class Twitter implements PlatformAPI {
 
   private onServerEvent: OnServerEventCallback
 
-  init = async (cookieJarJSON: string) => {
+  private sendNotificationsThread = true
+
+  init = async (cookieJarJSON: string, { dataDirPath }: AccountInfo) => {
     if (!cookieJarJSON) return
+    this.sendNotificationsThread = fsSync.existsSync(path.join(dataDirPath, '../twitter-notif-thread')) // todo change
     const cookieJar = CookieJar.fromJSON(cookieJarJSON)
     await this.api.setLoginState(cookieJar)
     await this.afterAuth()
@@ -122,6 +128,64 @@ export default class Twitter implements PlatformAPI {
     return (users as any[] || []).map(u => mapParticipant(u, {}))
   })
 
+  private async getNotificationMessages(pagination: PaginationArg) {
+    const cursors = { Top: null, Bottom: null }
+    const all = await this.api.notifications_all(pagination?.cursor)
+    if (!all.globalObjects) return { items: [], hasMore: false }
+    let unreadFrom: Date
+    const messages: Message[] = []
+    all.timeline.instructions?.forEach(instruction => {
+      const [name, value] = Object.entries<any>(instruction)[0]
+      switch (name) {
+        case 'addEntries':
+          value.entries?.forEach(entry => {
+            if (entry.content.operation) {
+              const { cursorType, value } = entry.content.operation.cursor
+              cursors[cursorType] = value
+            } else if (entry.content.item) {
+              const { content } = entry.content.item
+              if (content.tweet) {
+                messages.push(mapTweetNotification(all.globalObjects, unreadFrom, entry))
+              } else if (content.notification) {
+                const m = mapNotification(all.globalObjects, unreadFrom, entry.entryId, content.notification.id)
+                messages.push(m)
+              }
+            }
+          })
+          break
+
+        case 'markEntriesUnreadGreaterThanSortIndex':
+          unreadFrom = new Date(+value.sortIndex)
+          break
+      }
+    })
+    const notifs = all.globalObjects.notifications
+    if (!notifs) return { items: [], hasMore: false }
+    messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+    messages[0].cursor = cursors.Bottom
+    messages[messages.length - 1].cursor = cursors.Top
+    return { items: messages, hasMore: true }
+  }
+
+  private getNotificationsThread = async () => {
+    const participants = Object.keys(icons).map<User>(iconName => ({
+      id: iconName,
+      fullName: ' ',
+      imgURL: icons[iconName],
+    }))
+    const messages = await this.getNotificationMessages(undefined)
+    const thread: Thread = {
+      id: 'notifications',
+      type: 'channel',
+      title: `Notifications for ${this.currentUser.name}`,
+      isReadOnly: true,
+      isUnread: messages.items.some(m => m.extra.unread),
+      messages,
+      participants: { items: participants, hasMore: false },
+    }
+    return thread
+  }
+
   getThreads = async (folderName: InboxName, pagination: PaginationArg): Promise<Paginated<Thread>> => {
     const { cursor, direction } = pagination || { cursor: null, direction: null }
     const inboxType = {
@@ -151,7 +215,7 @@ export default class Twitter implements PlatformAPI {
       }])
     }
     return {
-      items: threads,
+      items: cursor || !this.sendNotificationsThread ? threads : [await this.getNotificationsThread(), ...threads],
       hasMore: timeline.status !== 'AT_END',
       oldestCursor: timeline.min_entry_id,
       newestCursor: timeline.max_entry_id,
@@ -159,6 +223,7 @@ export default class Twitter implements PlatformAPI {
   }
 
   getMessages = async (threadID: string, pagination: PaginationArg): Promise<Paginated<Message>> => {
+    if (threadID === NOTIFICATIONS_THREAD_ID) return this.getNotificationMessages(pagination)
     const { cursor, direction } = pagination || { cursor: null, direction: null }
     const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, cursor ? { [direction === 'before' ? 'max_id' : 'min_id']: cursor } : {})
     const entries = Object.values(conversation_timeline.entries || {})
@@ -173,6 +238,7 @@ export default class Twitter implements PlatformAPI {
   }
 
   getThread = async (threadID: string) => {
+    if (threadID === NOTIFICATIONS_THREAD_ID) return this.getNotificationsThread()
     const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, undefined)
     if (!conversation_timeline) return
     // if (IS_DEV) console.log(conversation_timeline)
@@ -238,8 +304,10 @@ export default class Twitter implements PlatformAPI {
   removeReaction = (threadID: string, messageID: string, reactionKey: string) =>
     this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID).then(this.handleJSONErrors)
 
-  sendReadReceipt = (threadID: string, messageID: string) =>
-    this.api.dm_conversation_mark_read(threadID, messageID)
+  sendReadReceipt = (threadID: string, messageID: string, messageCursor: string) =>
+    (threadID === NOTIFICATIONS_THREAD_ID
+      ? this.api.notifications_all_last_seen_cursor(messageCursor)
+      : this.api.dm_conversation_mark_read(threadID, messageID))
 
   getAsset = async (key: string, hex?: string) => {
     if (key === 'media') {

@@ -30,6 +30,8 @@ const staticFetchHeaders = {
   'x-twitter-active-user': 'yes',
   'x-twitter-auth-type': 'OAuth2Session',
   'x-twitter-client-language': 'en',
+  'sec-ch-ua': '"Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"',
+  'sec-ch-ua-mobile': '?0',
 }
 
 const commonParams = {
@@ -88,7 +90,7 @@ function handleErrors(url: string, statusCode: number, json: any) {
     throw new ReAuthError(loggedOutError!.message)
     // todo track reauth event
   }
-  console.log(url, statusCode, json.errors)
+  texts.log(url, statusCode, json.errors)
   const filteredErrors = errors.filter(err => !IGNORED_ERRORS.includes(err.code))
   if (filteredErrors.length > 0) {
     Sentry.captureException(Error(url), {
@@ -539,6 +541,49 @@ export default class TwitterAPI {
         cards_platform: 'Web-12',
         include_cards: 'true',
       },
+    })
+
+  notifications_all = (cursor: string) =>
+    this.fetch({
+      url: 'https://twitter.com/i/api/2/notifications/all.json',
+      searchParams: {
+        include_profile_interstitial_type: 1,
+        include_blocking: 1,
+        include_blocked_by: 1,
+        include_followed_by: 1,
+        include_want_retweets: 1,
+        include_mute_edge: 1,
+        include_can_dm: 1,
+        include_can_media_tag: 1,
+        skip_status: 1,
+        cards_platform: 'Web-12',
+        include_cards: 1,
+        include_ext_alt_text: 'true',
+        include_quote_count: 'true',
+        include_reply_count: 1,
+        tweet_mode: 'extended',
+        include_entities: 'true',
+        include_user_entities: 'true',
+        include_ext_media_color: 'true',
+        include_ext_media_availability: 'true',
+        send_error_codes: 'true',
+        simple_quoted_tweet: 'true',
+        count: cursor ? 40 : 20,
+        cursor,
+        ext: 'mediaStats,highlightedLabel,signalsReactionMetadata,signalsReactionPerspective,voiceInfo',
+      },
+      headers: {
+        'x-twitter-polling': 'true',
+      },
+      referer: 'https://twitter.com/notifications',
+    })
+
+  notifications_all_last_seen_cursor = (cursor: string) =>
+    this.fetch({
+      method: 'POST',
+      url: 'https://twitter.com/i/api/2/notifications/all/last_seen_cursor.json',
+      form: { cursor },
+      referer: 'https://twitter.com/notifications',
     })
 }
 
