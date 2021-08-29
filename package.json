@@ -9,7 +9,6 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn lint --fix || true; git add ."
     }
   },
   "dependencies": {
