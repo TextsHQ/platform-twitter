@@ -222,19 +222,18 @@ export function mapMessageLink(card: any): MessageLink {
   }
 }
 
-function mapTweet(tweet: any): Tweet {
-  const tweetEntities = mapEntities(tweet.status.entities)
+function mapTweet(tweet: any, user = tweet.user): Tweet {
+  const tweetEntities = mapEntities(tweet.entities)
   const messageTweet: Tweet = {
-    id: tweet.id,
-    url: tweet.expanded_url,
-    text: tweet.status.full_text,
-    timestamp: new Date(tweet.status.created_at),
+    id: tweet.id_str,
+    text: tweet.full_text,
+    timestamp: new Date(tweet.created_at),
     user: {
-      name: tweet.status.user.name,
-      username: tweet.status.user.screen_name,
-      imgURL: tweet.status.user.profile_image_url_https,
+      name: user.name,
+      username: user.screen_name,
+      imgURL: user.profile_image_url_https,
     },
-    attachments: ((tweet.status.extended_entities?.media || tweet.status.entities?.media) as any[])?.map(a => {
+    attachments: ((tweet.extended_entities?.media || tweet.entities?.media) as any[])?.map(a => {
       if (a.type === 'video') return getVideo(a)
       if (a.type === 'animated_gif') return { ...getVideo(a), isGif: true }
       if (a.type === 'photo') return getPhoto(a)
@@ -289,7 +288,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
       mapped.links = [mapMessageLink(card)]
     }
     if (tweet) {
-      mapped.tweets = [mapTweet(tweet)]
+      mapped.tweets = [mapTweet(tweet.status)]
     }
     if (animated_gif) {
       mapped.attachments = mapped.attachments || []
@@ -592,35 +591,6 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
   return { type: ServerEventType.THREAD_MESSAGES_REFRESH, threadID }
 }
 
-export function mapNotifTweet(tweet: any, user: any): Tweet {
-  const tweetEntities = mapEntities(tweet.entities)
-  const messageTweet: Tweet = {
-    id: tweet.id,
-    text: tweet.full_text,
-    timestamp: new Date(tweet.created_at),
-    user: {
-      name: user.name,
-      username: user.screen_name,
-      imgURL: user.profile_image_url_https,
-    },
-    // attachments: ((tweet.status?.extended_entities?.media || tweet.status?.entities?.media) as any[])?.map(a => {
-    //   if (a.type === 'video') return getVideo(a)
-    //   if (a.type === 'animated_gif') return { ...getVideo(a), isGif: true }
-    //   if (a.type === 'photo') return getPhoto(a)
-    //   return null
-    // }).filter(Boolean),
-  }
-  if (tweetEntities?.length > 0) {
-    messageTweet.textAttributes = {
-      entities: tweetEntities,
-      heDecode: true,
-    }
-  } else {
-    messageTweet.text = he.decode(messageTweet.text)
-  }
-  return messageTweet
-}
-
 type GlobalObjects = {
   tweets: Record<string, any>
   users: Record<string, any>
@@ -641,9 +611,10 @@ export function mapNotification(globalObjects: GlobalObjects, unreadFrom: Date, 
   const entry = globalObjects.notifications[notificationID]
   const tweetID = entry.template?.aggregateUserActionsV1?.targetObjects[0]?.tweet.id
   const users: any[] = entry.template?.aggregateUserActionsV1?.fromUsers.map(({ user }) => globalObjects.users[user.id]) || []
-  const tweet = globalObjects.tweets[tweetID]
+  const tweet = globalObjects.tweets?.[tweetID]
   const timestamp = new Date(+entry.timestampMs)
-  const entities = mapNotificationEntities(globalObjects, entry.message.entities, users.length * 3)
+  const prefixText = users.length ? `${' '.repeat(users.length * 3)}\n` : ''
+  const entities = mapNotificationEntities(globalObjects, entry.message.entities, prefixText.length)
   if (users.length) {
     entities.unshift(...users.map<TextEntity>((user, i) => ({
       from: i + (2 * i),
@@ -658,26 +629,27 @@ export function mapNotification(globalObjects: GlobalObjects, unreadFrom: Date, 
     })))
   }
   return {
-    _original: JSON.stringify(entry),
+    _original: JSON.stringify([entry, tweet]),
     id,
-    text: (users.length ? `${' '.repeat(users.length * 3)}\n` : '') + entry.message.text,
+    text: prefixText + entry.message.text,
     textAttributes: {
       entities,
     },
     timestamp,
     senderID: entry.icon.id.split('_')?.[0],
-    tweets: tweet ? [mapNotifTweet(tweet, globalObjects.users[tweet.user_id_str])] : undefined,
+    tweets: tweet ? [mapTweet(tweet, globalObjects.users[tweet.user_id_str])] : undefined,
     extra: { unread: unreadFrom >= timestamp },
   }
 }
 export function mapTweetNotification(globalObjects: GlobalObjects, unreadFrom: Date, entry: any): Message {
   const timestamp = new Date(+entry.sortIndex)
-  const tweet = globalObjects.tweets[entry.content.item.content.tweet.id]
+  const tweet = globalObjects.tweets?.[entry.content.item.content.tweet.id]
   return {
+    _original: JSON.stringify(tweet),
     id: entry.entryId,
     senderID: 'bird',
     timestamp,
-    tweets: tweet ? [mapNotifTweet(tweet, globalObjects.users[tweet.user_id_str])] : undefined,
+    tweets: tweet ? [mapTweet(tweet, globalObjects.users[tweet.user_id_str])] : undefined,
     extra: { unread: unreadFrom >= timestamp },
     // buttons: [
     //   { label: 'Reply', linkURL: 'texts://' },

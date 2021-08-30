@@ -570,7 +570,7 @@ export default class TwitterAPI {
         simple_quoted_tweet: 'true',
         count: cursor ? 40 : 20,
         cursor,
-        ext: 'mediaStats,highlightedLabel,signalsReactionMetadata,signalsReactionPerspective,voiceInfo',
+        ext: 'mediaStats,highlightedLabel,voiceInfo',
       },
       headers: {
         'x-twitter-polling': 'true',
