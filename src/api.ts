@@ -5,7 +5,8 @@ import mem from 'mem'
 import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, User, AccountInfo } from '@textshq/platform-sdk'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate, mapMessageLink, mapNotification, mapTweetNotification } from './mappers'
-import TwitterAPI, { LivePipeline } from './network-api'
+import TwitterAPI from './network-api'
+import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
 import icons from './icons'
 
