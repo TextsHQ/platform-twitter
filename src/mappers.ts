@@ -607,7 +607,7 @@ export const mapNotificationEntities = (globalObjects: GlobalObjects, entities: 
       mentionedUser: { id, username },
     }
   })
-export function mapNotification(globalObjects: GlobalObjects, unreadFrom: Date, id: string, notificationID: string): Message {
+export function mapNotification(globalObjects: GlobalObjects, id: string, notificationID: string): Message {
   const entry = globalObjects.notifications[notificationID]
   const tweetID = entry.template?.aggregateUserActionsV1?.targetObjects[0]?.tweet.id
   const users: any[] = entry.template?.aggregateUserActionsV1?.fromUsers.map(({ user }) => globalObjects.users[user.id]) || []
@@ -638,10 +638,9 @@ export function mapNotification(globalObjects: GlobalObjects, unreadFrom: Date, 
     timestamp,
     senderID: entry.icon.id.split('_')?.[0],
     tweets: tweet ? [mapTweet(tweet, globalObjects.users[tweet.user_id_str])] : undefined,
-    extra: { unread: unreadFrom >= timestamp },
   }
 }
-export function mapTweetNotification(globalObjects: GlobalObjects, unreadFrom: Date, entry: any): Message {
+export function mapTweetNotification(globalObjects: GlobalObjects, entry: any): Message {
   const timestamp = new Date(+entry.sortIndex)
   const tweet = globalObjects.tweets?.[entry.content.item.content.tweet.id]
   return {
@@ -650,7 +649,6 @@ export function mapTweetNotification(globalObjects: GlobalObjects, unreadFrom: D
     senderID: 'bird',
     timestamp,
     tweets: tweet ? [mapTweet(tweet, globalObjects.users[tweet.user_id_str])] : undefined,
-    extra: { unread: unreadFrom >= timestamp },
     // buttons: [
     //   { label: 'Reply', linkURL: 'texts://' },
     // ],

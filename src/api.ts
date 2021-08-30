@@ -132,7 +132,6 @@ export default class Twitter implements PlatformAPI {
     const cursors = { Top: null, Bottom: null }
     const all = await this.api.notifications_all(pagination?.cursor)
     if (!all.globalObjects) return { items: [], hasMore: false }
-    let unreadFrom: Date
     const messages: Message[] = []
     all.timeline.instructions?.forEach(instruction => {
       const [name, value] = Object.entries<any>(instruction)[0]
@@ -145,18 +144,32 @@ export default class Twitter implements PlatformAPI {
             } else if (entry.content.item) {
               const { content } = entry.content.item
               if (content.tweet) {
-                messages.push(mapTweetNotification(all.globalObjects, unreadFrom, entry))
+                messages.push(mapTweetNotification(all.globalObjects, entry))
               } else if (content.notification) {
-                const m = mapNotification(all.globalObjects, unreadFrom, entry.entryId, content.notification.id)
+                const m = mapNotification(all.globalObjects, entry.entryId, content.notification.id)
                 messages.push(m)
               }
             }
           })
           break
 
-        case 'markEntriesUnreadGreaterThanSortIndex':
-          unreadFrom = new Date(+value.sortIndex)
+        case 'removeEntries':
+          value.entryIds?.forEach(id => {
+            const index = messages.findIndex(m => m.id === id)
+            if (index > -1) messages.splice(index, 1)
+          })
           break
+
+        case 'markEntriesUnreadGreaterThanSortIndex': {
+          const unreadFrom = new Date(+value.sortIndex)
+          messages.forEach(m => {
+            m.extra = { unread: m.timestamp > unreadFrom }
+          })
+          break
+        }
+
+        default:
+          texts.log('getNotificationMessages: unrecognized', name, value)
       }
     })
     const notifs = all.globalObjects.notifications
