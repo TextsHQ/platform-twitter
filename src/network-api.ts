@@ -584,4 +584,65 @@ export default class TwitterAPI {
       form: { cursor },
       referer: 'https://twitter.com/notifications',
     })
+
+  favoriteTweet = (tweetID: string) =>
+    this.fetch({
+      method: 'POST',
+      url: 'https://twitter.com/i/api/graphql/lI07N6Otwv1PhnEgXILM7A/FavoriteTweet',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        variables: JSON.stringify({
+          tweet_id: tweetID,
+        }),
+        queryId: 'lI07N6Otwv1PhnEgXILM7A',
+      }),
+      referer: 'https://twitter.com/notifications',
+    })
+
+  unfavoriteTweet = (tweetID: string) =>
+    this.fetch({
+      method: 'POST',
+      url: 'https://twitter.com/i/api/graphql/ZYKSe-w7KEslx3JhSIk5LA/UnfavoriteTweet',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        variables: JSON.stringify({
+          tweet_id: tweetID,
+        }),
+        queryId: 'ZYKSe-w7KEslx3JhSIk5LA',
+      }),
+      referer: 'https://twitter.com/notifications',
+    })
+
+  createTweet = (text: string, in_reply_to_tweet_id: string) =>
+    this.fetch({
+      method: 'POST',
+      url: 'https://twitter.com/i/api/graphql/91Nf2Ip_E9aTPnxvX7rP_A/CreateTweet',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        variables: JSON.stringify({
+          tweet_text: text,
+          reply: {
+            in_reply_to_tweet_id,
+            exclude_reply_user_ids: [],
+          },
+          media: { media_entities: [], possibly_sensitive: false },
+          // withReactionsMetadata: true,
+          // withReactionsPerspective: true,
+          withSuperFollowsTweetFields: false,
+          withSuperFollowsUserFields: false,
+          semantic_annotation_ids: [],
+          dark_request: false,
+          withUserResults: true,
+          withBirdwatchPivots: false,
+        }),
+        queryId: '91Nf2Ip_E9aTPnxvX7rP_A',
+      }),
+      referer: 'https://twitter.com/notifications',
+    })
 }

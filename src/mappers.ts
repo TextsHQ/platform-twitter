@@ -598,17 +598,17 @@ type GlobalObjects = {
 }
 
 export const mapNotificationEntities = (globalObjects: GlobalObjects, entities: any[], offset = 0) =>
-  entities.map<TextEntity>(e => {
-    const { id } = e.ref.user
-    const username = globalObjects.users[id]?.screen_name
+  entities.map<TextEntity>(entity => {
+    const { id } = entity.ref?.user || {}
     return {
-      from: offset + e.fromIndex,
-      to: offset + e.toIndex,
-      mentionedUser: { id, username },
+      from: offset + entity.fromIndex,
+      to: offset + entity.toIndex,
+      mentionedUser: id ? { id, username: globalObjects.users[id]?.screen_name } : undefined,
+      bold: entity.format === 'Strong' || undefined,
     }
   })
-export function mapNotification(globalObjects: GlobalObjects, id: string, notificationID: string): Message {
-  const entry = globalObjects.notifications[notificationID]
+export function mapNotification(globalObjects: GlobalObjects, id: string, notification: any, currentUserID: string): Message {
+  const entry = globalObjects.notifications[notification.id]
   const tweetID = entry.template?.aggregateUserActionsV1?.targetObjects[0]?.tweet.id
   const users: any[] = entry.template?.aggregateUserActionsV1?.fromUsers.map(({ user }) => globalObjects.users[user.id]) || []
   const tweet = globalObjects.tweets?.[tweetID]
@@ -628,19 +628,29 @@ export function mapNotification(globalObjects: GlobalObjects, id: string, notifi
       },
     })))
   }
+  const text = prefixText + entry.message.text
+  const link = notification.url?.url
+  if (link) {
+    entities.push({
+      from: prefixText.length,
+      to: text.length,
+      link: link.startsWith('/') ? undefined : link,
+    })
+  }
   return {
-    _original: JSON.stringify([entry, tweet]),
+    _original: JSON.stringify([entry, notification, tweet]),
     id,
-    text: prefixText + entry.message.text,
+    text,
     textAttributes: {
       entities,
     },
     timestamp,
     senderID: entry.icon.id.split('_')?.[0],
     tweets: tweet ? [mapTweet(tweet, globalObjects.users[tweet.user_id_str])] : undefined,
+    reactions: tweet?.favorited ? [{ id: currentUserID, participantID: currentUserID, reactionKey: 'heart' }] : undefined,
   }
 }
-export function mapTweetNotification(globalObjects: GlobalObjects, entry: any): Message {
+export function mapTweetNotification(globalObjects: GlobalObjects, entry: any, currentUserID: string): Message {
   const timestamp = new Date(+entry.sortIndex)
   const tweet = globalObjects.tweets?.[entry.content.item.content.tweet.id]
   return {
@@ -649,6 +659,7 @@ export function mapTweetNotification(globalObjects: GlobalObjects, entry: any): 
     senderID: 'bird',
     timestamp,
     tweets: tweet ? [mapTweet(tweet, globalObjects.users[tweet.user_id_str])] : undefined,
+    reactions: tweet?.favorited ? [{ id: currentUserID, participantID: currentUserID, reactionKey: 'heart' }] : undefined,
     // buttons: [
     //   { label: 'Reply', linkURL: 'texts://' },
     // ],
