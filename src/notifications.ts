@@ -1,4 +1,4 @@
-import { texts, Message, Thread, PaginationArg, User, InboxName } from '@textshq/platform-sdk'
+import { texts, Message, Thread, PaginationArg, User, InboxName, ServerEventType } from '@textshq/platform-sdk'
 
 import { mapNotification, mapTweetNotification } from './mappers'
 import icons from './icons'
@@ -10,16 +10,18 @@ export default class Notifications {
   constructor(
     private readonly papi: InstanceType<typeof PAPI>,
     private readonly api: TwitterAPI,
-  ) {}
+  ) {
+    this.poll()
+  }
 
   messageTweetMap = new Map<string, string>()
 
-  async getMessages(pagination: PaginationArg) {
-    const cursors = { Top: null, Bottom: null }
-    const all = await this.api.notifications_all(pagination?.cursor)
-    if (!all.globalObjects) return { items: [], hasMore: false }
+  pollCursor: string
+
+  parseMessagesInTimeline(json: any, updatePollCursor = !this.pollCursor) {
+    const cursors: { Top: string, Bottom: string } = { Top: null, Bottom: null }
     const messages: Message[] = []
-    all.timeline.instructions?.forEach(instruction => {
+    json.timeline.instructions?.forEach(instruction => {
       const [name, value] = Object.entries<any>(instruction)[0]
       switch (name) {
         case 'addEntries':
@@ -28,16 +30,17 @@ export default class Notifications {
             if (entry.content.operation) {
               const { cursorType, value } = entry.content.operation.cursor
               cursors[cursorType] = value
+              if (updatePollCursor) this.pollCursor = cursors.Top
             } else if (entry.content.item) {
               const { content } = entry.content.item
               if (content.tweet) {
-                messages.push(mapTweetNotification(all.globalObjects, entry, this.papi.currentUser.id_str))
+                messages.push(mapTweetNotification(json.globalObjects, entry, this.papi.currentUser.id_str))
                 this.messageTweetMap.set(id, entry.content.item.content.tweet.id)
               } else if (content.notification) {
-                const nEntry = all.globalObjects.notifications[content.notification.id]
+                const nEntry = json.globalObjects.notifications[content.notification.id]
                 const tweetID = nEntry.template?.aggregateUserActionsV1?.targetObjects[0]?.tweet.id
                 this.messageTweetMap.set(id, tweetID)
-                const m = mapNotification(all.globalObjects, id, content.notification, this.papi.currentUser.id_str)
+                const m = mapNotification(json.globalObjects, id, content.notification, this.papi.currentUser.id_str)
                 messages.push(m)
               }
             }
@@ -67,11 +70,18 @@ export default class Notifications {
           texts.log('getNotificationMessages: unrecognized', name, value)
       }
     })
-    const notifs = all.globalObjects.notifications
-    if (!notifs) return { items: [], hasMore: false }
     messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
-    messages[0].cursor = cursors.Bottom
-    messages[messages.length - 1].cursor = cursors.Top
+    if (messages.length > 0) {
+      messages[0].cursor = cursors.Bottom
+      messages[messages.length - 1].cursor = cursors.Top
+    }
+    return messages
+  }
+
+  async getMessages(pagination: PaginationArg) {
+    const { json } = await this.api.notifications_all(pagination?.cursor)
+    if (!json.globalObjects) return { items: [], hasMore: false }
+    const messages = this.parseMessagesInTimeline(json)
     return { items: messages, hasMore: true }
   }
 
@@ -86,6 +96,7 @@ export default class Notifications {
       id: NOTIFICATIONS_THREAD_ID,
       type: 'channel',
       title: `Notifications for ${this.papi.currentUser.name}`,
+      description: 'This chat has all your Twitter notifications. React to a message with ❤️ to like the tweet.',
       isReadOnly: true,
       isUnread: messages.items.some(m => m.extra.unread),
       folderName: InboxName.NORMAL,
@@ -106,4 +117,52 @@ export default class Notifications {
     const tweetID = this.messageTweetMap.get(messageID)
     if (tweetID) return this.api.unfavoriteTweet(tweetID)
   }
+
+  private pollTimeout: NodeJS.Timeout
+
+  poll = async () => {
+    clearTimeout(this.pollTimeout)
+    if (this.papi.disposed) return
+    let nextFetchTimeoutMs = 30_000
+    if (this.papi.userUpdatesCursor) {
+      try {
+        const { json, headers } = await this.api.notifications_all(this.pollCursor) || {}
+        // texts.log(JSON.stringify(json, null, 2))
+        if (json) {
+          const messages = this.parseMessagesInTimeline(json, true)
+          texts.log('[twitter poll notifications]', messages.length, 'new messages')
+          if (messages.length > 0) {
+            this.papi.onServerEvent([{
+              type: ServerEventType.STATE_SYNC,
+              mutationType: 'upsert',
+              objectName: 'message',
+              objectIDs: { threadID: NOTIFICATIONS_THREAD_ID },
+              entries: messages,
+            }])
+          }
+        } else if (json?.errors[0]?.code === 88) { // RateLimitExceeded
+          const rateLimitReset = headers['x-rate-limit-reset']
+          const resetMs = (+rateLimitReset * 1000) - Date.now()
+          nextFetchTimeoutMs = resetMs
+          console.log('[twitter poll notifications] rate limit exceeded, next fetch:', resetMs)
+        } else {
+          console.log('[twitter poll notifications] json is falsey')
+          nextFetchTimeoutMs = 60_000
+        }
+      } catch (err) {
+        nextFetchTimeoutMs = 60_000
+        const isOfflineError = err.name === 'RequestError' && (err.code === 'ENETDOWN' || err.code === 'EADDRNOTAVAIL')
+        if (!isOfflineError) {
+          console.error('tw error', err)
+          texts.Sentry.captureException(err)
+        }
+      }
+    } else {
+      texts.log('[twitter poll notifications] skipping polling bc !this.userUpdatesCursor')
+    }
+    this.pollTimeout = setTimeout(this.poll, nextFetchTimeoutMs)
+  }
+
+  markRead = (cursor: string) =>
+    this.api.notifications_all_last_seen_cursor(cursor)
 }

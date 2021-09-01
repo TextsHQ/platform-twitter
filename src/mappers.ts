@@ -630,11 +630,11 @@ export function mapNotification(globalObjects: GlobalObjects, id: string, notifi
   }
   const text = prefixText + entry.message.text
   const link = notification.url?.url
-  if (link) {
+  if (link.startsWith('https://')) { // ignore relative urt links
     entities.push({
       from: prefixText.length,
       to: text.length,
-      link: link.startsWith('/') ? undefined : link,
+      link,
     })
   }
   return {

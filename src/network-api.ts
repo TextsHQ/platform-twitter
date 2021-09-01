@@ -544,6 +544,7 @@ export default class TwitterAPI {
 
   notifications_all = (cursor: string) =>
     this.fetch({
+      includeHeaders: true,
       url: 'https://twitter.com/i/api/2/notifications/all.json',
       searchParams: {
         include_profile_interstitial_type: 1,

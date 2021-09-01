@@ -19,15 +19,15 @@ export default class Twitter implements PlatformAPI {
 
   currentUser = null
 
-  private userUpdatesCursor = null
+  userUpdatesCursor = null
 
-  private disposed = false
+  disposed = false
 
-  private onServerEvent: OnServerEventCallback
+  onServerEvent: OnServerEventCallback
 
   private sendNotificationsThread = true
 
-  private notifications = new Notifications(this, this.api)
+  private notifications: Notifications
 
   init = async (cookieJarJSON: string, { dataDirPath }: AccountInfo) => {
     if (!cookieJarJSON) return
@@ -62,7 +62,7 @@ export default class Twitter implements PlatformAPI {
           const rateLimitReset = headers['x-rate-limit-reset']
           const resetMs = (+rateLimitReset * 1000) - Date.now()
           nextFetchTimeoutMs = resetMs
-          console.log('twitter poll user updates: rate limit exceeded, next fetch:', resetMs)
+          console.log('[twitter poll user updates]: rate limit exceeded, next fetch:', resetMs)
         } else {
           nextFetchTimeoutMs = 60_000
         }
@@ -75,7 +75,7 @@ export default class Twitter implements PlatformAPI {
         }
       }
     } else {
-      texts.log('skipping polling bc !this.userUpdatesCursor')
+      texts.log('[twitter poll user updates] skipping polling bc !this.userUpdatesCursor')
     }
     this.pollTimeout = setTimeout(this.pollUserUpdates, nextFetchTimeoutMs)
   }
@@ -122,6 +122,9 @@ export default class Twitter implements PlatformAPI {
   afterAuth = async () => {
     const response = await this.api.account_verify_credentials()
     this.currentUser = response
+    if (this.sendNotificationsThread) {
+      this.notifications = new Notifications(this, this.api)
+    }
   }
 
   getCurrentUser = () => mapCurrentUser(this.currentUser)
@@ -160,7 +163,7 @@ export default class Twitter implements PlatformAPI {
       }])
     }
     return {
-      items: cursor || !this.sendNotificationsThread ? threads : [await this.notifications.getThread(), ...threads],
+      items: cursor || !this.sendNotificationsThread || folderName === InboxName.REQUESTS ? threads : [await this.notifications.getThread(), ...threads],
       hasMore: timeline.status !== 'AT_END',
       oldestCursor: timeline.min_entry_id,
       newestCursor: timeline.max_entry_id,
@@ -255,7 +258,7 @@ export default class Twitter implements PlatformAPI {
 
   sendReadReceipt = (threadID: string, messageID: string, messageCursor: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
-      ? this.api.notifications_all_last_seen_cursor(messageCursor)
+      ? this.notifications.markRead(messageCursor)
       : this.api.dm_conversation_mark_read(threadID, messageID))
 
   getAsset = async (key: string, hex?: string) => {
