@@ -37,6 +37,13 @@ const info: PlatformInfo = {
     noSupportForFiles: true,
     supportsCaption: true,
   },
+  prefs: {
+    show_notifications_thread: {
+      label: 'Show Twitter notifications as a thread (beta)',
+      type: 'checkbox',
+      default: false,
+    },
+  },
   getUserProfileLink: ({ username }) =>
     username && `https://twitter.com/${username}`,
 }

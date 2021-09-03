@@ -29,9 +29,9 @@ export default class Twitter implements PlatformAPI {
 
   private notifications: Notifications
 
-  init = async (cookieJarJSON: string, { dataDirPath }: AccountInfo) => {
+  init = async (cookieJarJSON: string, _: AccountInfo, prefs: Record<string, any>) => {
     if (!cookieJarJSON) return
-    this.sendNotificationsThread = fsSync.existsSync(path.join(dataDirPath, '../twitter-notif-thread')) // todo change
+    this.sendNotificationsThread = prefs?.show_notifications_thread
     const cookieJar = CookieJar.fromJSON(cookieJarJSON)
     await this.api.setLoginState(cookieJar)
     await this.afterAuth()
