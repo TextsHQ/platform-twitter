@@ -30,6 +30,7 @@ const info: PlatformInfo = {
     Attribute.SUPPORTS_DELETE_THREAD,
     Attribute.SORT_MESSAGES_ON_PUSH,
     Attribute.CAN_MESSAGE_USERNAME,
+    Attribute.SEARCH_ALL_USERS_FOR_GROUP_MENTIONS,
   ]),
   attachments: {
     gifMimeType: 'image/gif',
