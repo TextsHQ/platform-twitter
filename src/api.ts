@@ -90,6 +90,15 @@ export default class Twitter implements PlatformAPI {
     this.onServerEvent = onEvent
     this.live.setup()
     this.pollUserUpdates()
+    this.notifications?.getThread().then(thread => {
+      onEvent([{
+        type: ServerEventType.STATE_SYNC,
+        objectIDs: {},
+        objectName: 'thread',
+        mutationType: 'upsert',
+        entries: [thread],
+      }])
+    })
   }
 
   dispose = () => {
@@ -163,7 +172,7 @@ export default class Twitter implements PlatformAPI {
       }])
     }
     return {
-      items: cursor || !this.sendNotificationsThread || folderName === InboxName.REQUESTS ? threads : [await this.notifications.getThread(), ...threads],
+      items: threads,
       hasMore: timeline.status !== 'AT_END',
       oldestCursor: timeline.min_entry_id,
       newestCursor: timeline.max_entry_id,
