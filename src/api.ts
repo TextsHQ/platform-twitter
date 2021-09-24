@@ -1,5 +1,4 @@
-import path from 'path'
-import fsSync, { promises as fs } from 'fs'
+import { promises as fs } from 'fs'
 import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
 import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo } from '@textshq/platform-sdk'
@@ -196,21 +195,28 @@ export default class Twitter implements PlatformAPI {
 
   getThread = async (threadID: string) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) return this.notifications.getThread()
-    const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, undefined)
+    if (!threadID || typeof threadID !== 'string') throw Error('invalid threadID')
+    const json = await this.api.dm_conversation_thread(threadID, undefined)
+    if (!json) return
+    const { conversation_timeline } = json
     if (!conversation_timeline) return
     // if (IS_DEV) console.log(conversation_timeline)
     return mapThreads(conversation_timeline, this.currentUser)[0][0]
   }
 
-  createThread = async (userIDs: string[]) => {
+  createThread = async (userIDs: string[], title: string, messageText: string) => {
     if (userIDs.length === 0) return null
     if (userIDs.length === 1) {
       const [userID] = userIDs
       const threadID = `${this.currentUser.id_str}-${userID}`
       return this.getThread(threadID)
     }
-    // const json = await this.api.dm_conversation(userIDs)
-    // return mapThreads(conversation_timeline, this.currentUser)[0]
+    const { entries, errors } = await this.api.dm_new({ text: messageText, recipientIDs: userIDs.join(',') })
+    if (errors) {
+      throw new Error((errors as any[]).map(err => err.message).join(', '))
+    }
+    const threadID = entries.find(e => e.conversation_create)?.conversation_create?.conversation_id
+    return this.getThread(threadID)
   }
 
   sendMessage = async (threadID: string, content: MessageContent, msgSendOptions: MessageSendOptions) => {
@@ -225,7 +231,7 @@ export default class Twitter implements PlatformAPI {
   }
 
   private sendTextMessage = async (threadID: string, text: string, { pendingMessageID }: MessageSendOptions) => {
-    const { entries, errors } = await this.api.dm_new(text, threadID, pendingMessageID)
+    const { entries, errors } = await this.api.dm_new({ text, threadID, generatedMsgID: pendingMessageID })
     if (IS_DEV) console.log(entries, errors)
     // [ { message: 'Over capacity', code: 130 } ]
     if (errors) {
@@ -238,7 +244,7 @@ export default class Twitter implements PlatformAPI {
   private sendFileFromBuffer = async (threadID: string, text: string, fileBuffer: Buffer, mimeType: string, { pendingMessageID }: MessageSendOptions) => {
     const mediaID = await this.api.upload(threadID, fileBuffer, mimeType)
     if (!mediaID) return
-    const { entries, errors } = await this.api.dm_new(text || '', threadID, pendingMessageID, mediaID)
+    const { entries, errors } = await this.api.dm_new({ text: text || '', threadID, recipientIDs: undefined, generatedMsgID: pendingMessageID, mediaID })
     if (IS_DEV) console.log(entries, errors)
     if (errors) {
       throw new Error((errors as any[]).map(err => err.message).join(', '))

@@ -325,13 +325,20 @@ export default class TwitterAPI {
       referer: 'https://twitter.com/messages/compose',
     })
 
-  dm_new = (text: string, threadID: string, generatedMsgID: string, mediaID: string = undefined, includeLinkPreview = true) => {
+  dm_new({ text, threadID, recipientIDs, generatedMsgID, mediaID, includeLinkPreview = true }: {
+    text: string
+    threadID?: string
+    recipientIDs?: string
+    generatedMsgID?: string
+    mediaID?: string
+    includeLinkPreview?: boolean
+  }) {
     const form = {
       ...commonDMParams,
       text,
       conversation_id: threadID,
       media_id: mediaID,
-      recipient_ids: 'false',
+      recipient_ids: threadID ? 'false' : recipientIDs,
       request_id: (generatedMsgID || uuid()).toUpperCase(),
       ext: EXT,
       ...(includeLinkPreview ? {} : { card_uri: 'tombstone://card' }),
