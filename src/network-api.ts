@@ -72,7 +72,7 @@ const UPLOAD_ENDPOINT = 'https://upload.twitter.com/'
 const MAX_CHUNK_SIZE = 1 * 1024 * 1024
 
 const genCSRFToken = () =>
-  randomBytes(16).then(b => b.toString('hex'))
+  randomBytes(80).then(b => b.toString('hex'))
 
 const CT0_MAX_AGE = 6 * 60 * 60
 
