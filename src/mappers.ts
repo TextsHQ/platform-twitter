@@ -143,7 +143,7 @@ export function mapThread(thread: any, users: any = {}, currentUserTw: any): Thr
       items: participants,
     },
     title: thread.name,
-    timestamp: new Date(+thread.sort_timestamp || Date.now()),
+    timestamp: +thread.sort_timestamp ? new Date(+thread.sort_timestamp) : undefined,
     type: MAP_THREAD_TYPE[thread.type],
   }
   if (thread.notifications_disabled) {
