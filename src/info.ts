@@ -22,7 +22,7 @@ const info: PlatformInfo = {
   },
   typingDurationMs: 3000,
   attributes: new Set([
-    Attribute.GROUP_CREATION_REQUIRES_MESSAGE,
+    Attribute.GROUP_THREAD_CREATION_REQUIRES_MESSAGE,
     Attribute.NO_SUPPORT_GROUP_REMOVE_PARTICIPANT,
     Attribute.SUBSCRIBE_TO_THREAD_SELECTION,
     Attribute.SUPPORTS_REQUESTS_INBOX,
