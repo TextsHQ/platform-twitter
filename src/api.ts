@@ -340,7 +340,7 @@ export default class Twitter implements PlatformAPI {
         client_app_id: '3033300',
         source: 'reportdmconversation',
         report_flow_id: uuid(),
-        reported_user_id: threadID.replace(this.currentUser.id_str, '').replace('-', ''), // 1270667971933794305-1324055140446441472 -> 1270667971933794305
+        reported_user_id: threadID.includes('-') ? threadID.replace(this.currentUser.id_str, '').replace('-', '') : '0', // 1270667971933794305-1324055140446441472 -> 1270667971933794305
         reported_direct_message_conversation_id: threadID,
         initiated_in_app: '1',
         lang: 'en',
