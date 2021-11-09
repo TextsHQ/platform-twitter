@@ -288,8 +288,11 @@ export default class Twitter implements PlatformAPI {
     return this.api.authenticatedGet(url)
   }
 
-  deleteMessage = (threadID: string, messageID: string) =>
-    this.api.dm_destroy(threadID, messageID).then(this.handleJSONErrors)
+  deleteMessage = async (threadID: string, messageID: string) => {
+    if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Notifications cannot be deleted from the notifications thread')
+    const json = await this.api.dm_destroy(threadID, messageID)
+    return this.handleJSONErrors(json)
+  }
 
   updateThread = async (threadID: string, updates: Partial<Thread>) => {
     if ('title' in updates) {
@@ -305,21 +308,25 @@ export default class Twitter implements PlatformAPI {
   }
 
   deleteThread = async (threadID: string) => {
+    if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Notifications thread cannot be deleted')
     await this.api.dm_conversation_delete(threadID)
   }
 
   changeThreadImage = async (threadID: string, imageBuffer: Buffer, mimeType: string) => {
+    if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Image cannot be changed for the notifications thread')
     const mediaID = await this.api.upload(threadID, imageBuffer, mimeType)
     if (!mediaID) return
     await this.api.dm_conversation_update_avatar(threadID, mediaID)
   }
 
   addParticipant = async (threadID: string, participantID: string) => {
+    if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Participants cannot be added to the notifications thread')
     await this.api.dm_conversation_add_participants(threadID, [participantID])
     return true
   }
 
   removeParticipant = async (threadID: string, participantID: string) => {
+    if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Participants cannot be removed from the notifications thread')
     if (participantID !== this.currentUser.id_str) return
     await this.deleteThread(threadID)
     return true
@@ -331,6 +338,7 @@ export default class Twitter implements PlatformAPI {
   }
 
   reportThread = async (type: 'spam', threadID: string, firstMessageID: string) => {
+    if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Notifications thread cannot be reported')
     this.onServerEvent([{
       type: ServerEventType.OPEN_WINDOW,
       windowTitle: 'Report thread',
