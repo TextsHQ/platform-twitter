@@ -31,6 +31,7 @@ const info: PlatformInfo = {
     Attribute.SORT_MESSAGES_ON_PUSH,
     Attribute.CAN_MESSAGE_USERNAME,
     Attribute.SEARCH_ALL_USERS_FOR_GROUP_MENTIONS,
+    Attribute.SUPPORTS_REPORT_THREAD,
   ]),
   attachments: {
     gifMimeType: 'image/gif',

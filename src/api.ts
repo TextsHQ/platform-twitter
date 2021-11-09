@@ -1,6 +1,8 @@
 import { promises as fs } from 'fs'
 import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
+import querystring from 'querystring'
+import { v4 as uuid } from 'uuid'
 import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo } from '@textshq/platform-sdk'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
@@ -326,5 +328,25 @@ export default class Twitter implements PlatformAPI {
   getLinkPreview = async (linkURL: string) => {
     const res = await this.api.cards_preview(linkURL)
     return mapMessageLink(res.card)
+  }
+
+  reportThread = async (type: 'spam', threadID: string, firstMessageID: string) => {
+    this.onServerEvent([{
+      type: ServerEventType.OPEN_WINDOW,
+      windowTitle: 'Report thread',
+      url: 'https://twitter.com/i/safety/report_story?' + querystring.stringify({
+        client_location: 'messages%3Athread%3A',
+        client_referer: `%2Fmessages%2F${threadID}`,
+        client_app_id: '3033300',
+        source: 'reportdmconversation',
+        report_flow_id: uuid(),
+        reported_user_id: threadID.replace(this.currentUser.id_str, '').replace('-', ''), // 1270667971933794305-1324055140446441472 -> 1270667971933794305
+        reported_direct_message_conversation_id: threadID,
+        initiated_in_app: '1',
+        lang: 'en',
+      }),
+      cookieJar: this.api.cookieJar.toJSON(),
+    }])
+    return true
   }
 }
