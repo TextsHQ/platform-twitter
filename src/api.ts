@@ -26,13 +26,13 @@ export default class Twitter implements PlatformAPI {
 
   onServerEvent: OnServerEventCallback
 
-  private sendNotificationsThread = true
+  private sendNotificationsThread = false
 
   private notifications: Notifications
 
   init = async (cookieJarJSON: string, _: AccountInfo, prefs: Record<string, any>) => {
-    if (!cookieJarJSON) return
     this.sendNotificationsThread = prefs?.show_notifications_thread
+    if (!cookieJarJSON) return
     const cookieJar = CookieJar.fromJSON(cookieJarJSON)
     await this.api.setLoginState(cookieJar)
     await this.afterAuth()
