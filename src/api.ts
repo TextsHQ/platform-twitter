@@ -3,9 +3,9 @@ import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
 import querystring from 'querystring'
 import { v4 as uuid } from 'uuid'
-import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo } from '@textshq/platform-sdk'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo, User } from '@textshq/platform-sdk'
 
-import { mapThreads, mapMessage, mapMessages, mapEvent, REACTION_MAP_TO_TWITTER, mapParticipant, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
+import { mapThreads, mapMessage, mapMessages, mapEvent, mapUser, REACTION_MAP_TO_TWITTER, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
 import TwitterAPI from './network-api'
 import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
@@ -18,9 +18,9 @@ export default class Twitter implements PlatformAPI {
 
   private readonly live = new LivePipeline(this.api, this.onLiveEvent.bind(this))
 
-  currentUser = null
+  currentUser: any = null
 
-  userUpdatesCursor = null
+  userUpdatesCursor: string = null
 
   disposed = false
 
@@ -141,7 +141,7 @@ export default class Twitter implements PlatformAPI {
 
   searchUsers = mem(async (typed: string) => {
     const { users } = await this.api.typeahead(typed) || {}
-    return (users as any[] || []).map(u => mapParticipant(u, {}))
+    return (users as any[] || []).map(u => mapUser(u))
   })
 
   getThreads = async (folderName: InboxName, pagination: PaginationArg): Promise<Paginated<Thread>> => {
@@ -204,6 +204,14 @@ export default class Twitter implements PlatformAPI {
     if (!conversation_timeline) return
     // if (IS_DEV) console.log(conversation_timeline)
     return mapThreads(conversation_timeline, this.currentUser)[0][0]
+  }
+
+  getUser = async ({ username }: { username: string }): Promise<User> => {
+    const json = await this.api.userByScreenName(username)
+    return {
+      ...mapUser(json.data.user.result.legacy),
+      id: json.data.user.result.rest_id,
+    }
   }
 
   createThread = async (userIDs: string[], title: string, messageText: string) => {

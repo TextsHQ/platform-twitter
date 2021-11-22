@@ -653,4 +653,15 @@ export default class TwitterAPI {
       }),
       referer: 'https://twitter.com/notifications',
     })
+
+  userByScreenName = (screen_name: string) =>
+    this.fetch({
+      method: 'GET',
+      url: 'https://twitter.com/i/api/graphql/7mjxD3-C6BxitPMVQ6w0-Q/UserByScreenName?variables=' + encodeURIComponent(JSON.stringify({
+        screen_name,
+        withSafetyModeUserFields: true,
+        withSuperFollowsUserFields: true,
+      })),
+      referer: `https://twitter.com/${screen_name}`,
+    })
 }

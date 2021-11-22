@@ -22,6 +22,7 @@ import {
   ActivityType,
   Tweet,
   MessageBehavior,
+  User,
 } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
@@ -82,7 +83,7 @@ function mapEntities(entities: any, removeIndicies?: [number, number][]) {
   ]
 }
 
-export function mapParticipant(user: any, participant: any): Participant {
+export function mapUser(user: any): User {
   if (!user) return
   return {
     id: user.id_str,
@@ -91,7 +92,6 @@ export function mapParticipant(user: any, participant: any): Participant {
     imgURL: user.profile_image_url_https.replace('_normal', ''),
     isVerified: user.verified,
     cannotMessage: user.is_dm_able === false,
-    isAdmin: !!participant.is_admin,
     social: {
       followers: { count: user.followers_count },
       followingUsers: { count: user.friends_count },
@@ -107,6 +107,13 @@ export function mapParticipant(user: any, participant: any): Participant {
       followedBy: user.followed_by,
       coverImgURL: user.profile_banner_url,
     },
+  }
+}
+export function mapParticipant(user: any, participant: any): Participant {
+  if (!user) return
+  return {
+    ...mapUser(user),
+    isAdmin: !!participant.is_admin,
   }
 }
 
