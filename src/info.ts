@@ -41,7 +41,7 @@ const info: PlatformInfo = {
   },
   prefs: {
     show_notifications_thread: {
-      label: 'Show Twitter notifications as a thread (beta)',
+      label: 'Show Twitter notifications as a thread',
       type: 'checkbox',
       default: false,
     },
