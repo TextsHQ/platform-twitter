@@ -199,7 +199,7 @@ function getSeen(threadParticipants: any[] = [], msg: any): MessageSeen {
 
 const getVideo = (video: any): MessageAttachment => ({
   id: video.id_str,
-  type: MessageAttachmentType.VIDEO,
+  type: video.audio_only ? MessageAttachmentType.AUDIO : MessageAttachmentType.VIDEO,
   srcURL: maxBy((video.video_info.variants as any[]).filter(v => v.content_type === 'video/mp4'), 'bitrate')?.url,
   size: pick(video.original_info, ['width', 'height']),
 })
