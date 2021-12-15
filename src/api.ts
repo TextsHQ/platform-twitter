@@ -299,7 +299,8 @@ export default class Twitter implements PlatformAPI {
   deleteMessage = async (threadID: string, messageID: string) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Notifications cannot be deleted from the notifications thread')
     const json = await this.api.dm_destroy(threadID, messageID)
-    return this.handleJSONErrors(json)
+    this.handleJSONErrors(json)
+    return true
   }
 
   updateThread = async (threadID: string, updates: Partial<Thread>) => {
