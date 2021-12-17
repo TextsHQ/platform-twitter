@@ -27,6 +27,11 @@ import {
 
 import { supportedReactions, MessageType } from './constants'
 
+type TwitterUser = {} & any
+type TwitterThreadParticipant = {} & any
+type TwitterThread = {} & any
+type TwitterMessage = {} & any
+
 const TWITTER_EPOCH = 1288834974657
 function getTimestampFromSnowflake(snowflake: string) {
   if (!snowflake) return
@@ -83,7 +88,7 @@ function mapEntities(entities: any, removeIndicies?: [number, number][]) {
   ]
 }
 
-export function mapUser(user: any): User {
+export function mapUser(user: TwitterUser): User {
   if (!user) return
   return {
     id: user.id_str,
@@ -109,7 +114,7 @@ export function mapUser(user: any): User {
     },
   }
 }
-export function mapParticipant(user: any, participant: any): Participant {
+export function mapParticipant(user: TwitterUser, participant: TwitterThreadParticipant): Participant {
   if (!user) return
   return {
     ...mapUser(user),
@@ -117,7 +122,7 @@ export function mapParticipant(user: any, participant: any): Participant {
   }
 }
 
-export function mapCurrentUser(user: any): CurrentUser {
+export function mapCurrentUser(user: TwitterUser): CurrentUser {
   return {
     id: user.id_str,
     fullName: user.name,
@@ -132,9 +137,10 @@ const MAP_THREAD_TYPE = {
   GROUP_DM: 'group',
 }
 
-export function mapThread(thread: any, users: any = {}, currentUserTw: any): Thread {
+export function mapThread(thread: TwitterThread, users: Record<string, TwitterUser> = {}, currentUserTw: TwitterUser): Thread {
+  const twParticipants = thread.participants as TwitterUser[]
   const participants = orderBy(
-    (thread.participants as any[]).map(p => mapParticipant(users[p.user_id], p)).filter(Boolean),
+    twParticipants.map(p => mapParticipant(users[p.user_id], p)).filter(Boolean),
     u => u.id === currentUserTw.id_str,
   )
   const mapped: Thread = {
@@ -188,7 +194,7 @@ const mapReaction = ({ sender_id: participantID, reaction_key }: any) => ({
 const mapReactions = (reactions: any[]) =>
   reactions.map<MessageReaction>(mapReaction)
 
-function getSeen(threadParticipants: any[] = [], msg: any): MessageSeen {
+function getSeen(threadParticipants: TwitterUser[] = [], msg: TwitterMessage): MessageSeen {
   const result: { [userID: string]: Date } = {}
   threadParticipants.forEach(({ user_id, last_read_event_id }) => {
     if (!last_read_event_id || msg.id > last_read_event_id) return
@@ -258,7 +264,7 @@ function mapTweet(tweet: any, user = tweet.user): Tweet {
   return messageTweet
 }
 
-export function mapMessage(m: any, currentUserID: string, threadParticipants: any): Message {
+export function mapMessage(m: TwitterMessage, currentUserID: string, threadParticipants: TwitterUser[]): Message {
   const type = Object.keys(m)[0]
   const msg = m[type]
   const mapped: Message = {
@@ -369,7 +375,7 @@ export function mapMessage(m: any, currentUserID: string, threadParticipants: an
   return mapped
 }
 
-function getReactionMessages(m: any, currentUserID: string) {
+function getReactionMessages(m: TwitterMessage, currentUserID: string) {
   const msg = Object.values(m)[0] as any
   if (!msg.message_reactions) return []
   return (msg.message_reactions as any[]).map<Message>(reaction => {
@@ -396,7 +402,7 @@ function getReactionMessages(m: any, currentUserID: string) {
   })
 }
 
-export const mapMessages = (messages: any[], thread: any, currentUserID: string): Message[] =>
+export const mapMessages = (messages: TwitterMessage[], thread: TwitterThread, currentUserID: string): Message[] =>
   orderBy(messages.flatMap(m => ([
     mapMessage(m, currentUserID, thread.participants),
     ...getReactionMessages(m, currentUserID),
@@ -414,7 +420,7 @@ function groupMessages(entries: any[]) {
   return messages
 }
 
-export function mapThreads(json: any, currentUser: any, inboxType?: string): [Thread[], Thread[]] {
+export function mapThreads(json: any, currentUser: TwitterUser, inboxType?: string): [Thread[], Thread[]] {
   const otherThreads: Thread[] = []
   const threads: Thread[] = []
   if (!json) return [threads, otherThreads]
@@ -617,7 +623,7 @@ export const mapNotificationEntities = (globalObjects: GlobalObjects, entities: 
 export function mapNotification(globalObjects: GlobalObjects, id: string, notification: any, currentUserID: string): Message {
   const entry = globalObjects.notifications[notification.id]
   const tweetID = entry.template?.aggregateUserActionsV1?.targetObjects[0]?.tweet.id
-  const users: any[] = entry.template?.aggregateUserActionsV1?.fromUsers.map(({ user }) => globalObjects.users[user.id]) || []
+  const users: TwitterUser[] = entry.template?.aggregateUserActionsV1?.fromUsers.map(({ user }) => globalObjects.users[user.id]) || []
   const tweet = globalObjects.tweets?.[tweetID]
   const timestamp = new Date(+entry.timestampMs)
   const prefixText = users.length ? `${' '.repeat(users.length * 3)}\n` : ''
