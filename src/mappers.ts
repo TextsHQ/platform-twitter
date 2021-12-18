@@ -148,7 +148,7 @@ export function mapThread(thread: TwitterThread, users: Record<string, TwitterUs
     id: thread.conversation_id,
     folderName: thread.trusted ? InboxName.NORMAL : InboxName.REQUESTS,
     isReadOnly: thread.read_only,
-    lastReadMessageID: twParticipants.find(p => p.user_id === currentUserTw.id_str)?.last_read_event_id,
+    lastReadMessageID: thread.last_read_event_id,
     imgURL: thread.avatar_image_https,
     isUnread: null,
     messages: null,
@@ -494,6 +494,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
             {
               id: threadID,
               isUnread: false,
+              lastReadMessageID: conv.last_read_event_id,
             },
           ],
         }
