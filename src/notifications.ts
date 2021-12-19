@@ -1,4 +1,5 @@
 import { texts, Message, Thread, PaginationArg, User, InboxName, ServerEventType } from '@textshq/platform-sdk'
+import { findLast } from 'lodash'
 
 import { mapNotification, mapTweetNotification } from './mappers'
 import icons from './icons'
@@ -14,9 +15,9 @@ export default class Notifications {
     this.poll()
   }
 
-  messageTweetMap = new Map<string, string>()
+  private messageTweetMap = new Map<string, string>()
 
-  pollCursor: string
+  private pollCursor: string
 
   parseMessagesInTimeline(json: any, updatePollCursor = !this.pollCursor) {
     const cursors: { Top: string, Bottom: string } = { Top: null, Bottom: null }
@@ -25,7 +26,7 @@ export default class Notifications {
       const [name, value] = Object.entries<any>(instruction)[0]
       switch (name) {
         case 'addEntries':
-          value.entries?.forEach(entry => {
+          (value.entries as any)?.forEach(entry => {
             const id = entry.entryId
             if (entry.content.operation) {
               const { cursorType, value } = entry.content.operation.cursor
@@ -48,7 +49,7 @@ export default class Notifications {
           break
 
         case 'removeEntries':
-          value.entryIds?.forEach(id => {
+          (value.entryIds as string[])?.forEach(id => {
             const index = messages.findIndex(m => m.id === id)
             if (index > -1) messages.splice(index, 1)
           })
@@ -99,6 +100,7 @@ export default class Notifications {
       description: 'This chat has all your Twitter notifications. React to a message with ❤️ to like the tweet.',
       isReadOnly: true,
       isUnread: messages.items.some(m => m.extra.unread),
+      lastReadMessageID: (findLast(messages.items, m => !m.extra.unread) as Message)?.id,
       folderName: InboxName.NORMAL,
       messages,
       participants: { items: participants, hasMore: false },

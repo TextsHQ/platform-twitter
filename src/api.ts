@@ -304,6 +304,7 @@ export default class Twitter implements PlatformAPI {
   }
 
   updateThread = async (threadID: string, updates: Partial<Thread>) => {
+    if (threadID === NOTIFICATIONS_THREAD_ID) return
     if ('title' in updates) {
       const result = await this.api.dm_conversation_update_name(threadID, updates.title)
       return result === undefined
