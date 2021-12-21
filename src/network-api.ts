@@ -137,7 +137,7 @@ export default class TwitterAPI {
     includeHeaders?: boolean
   }) => {
     if (!this.cookieJar) throw new Error('Twitter cookie jar not found')
-    if (IS_DEV) console.log('[TW] CALLING', options.url)
+    // if (IS_DEV) console.log('[TW] CALLING', options.url)
     await this.setCSRFTokenCookie()
 
     options.headers = {

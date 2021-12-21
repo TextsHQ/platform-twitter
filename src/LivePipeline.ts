@@ -34,7 +34,7 @@ export default class LivePipeline {
         return
       }
       const json = JSON.parse(event.data)
-      if (IS_DEV) console.log(new Date(), 'es', json)
+      // if (IS_DEV) console.log(new Date(), 'es', json)
       if (json.topic === '/system/config') {
         const { session_id, subscription_ttl_millis } = json.payload.config
         this.subTtlMs = subscription_ttl_millis
