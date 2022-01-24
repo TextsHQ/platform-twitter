@@ -10,6 +10,7 @@ import TwitterAPI from './network-api'
 import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
 import Notifications from './notifications'
+import _ from 'lodash'
 
 const { IS_DEV, Sentry } = texts
 
@@ -49,9 +50,7 @@ export default class Twitter implements PlatformAPI {
     this.userUpdatesCursor = json.user_events?.cursor
     const events = (json.user_events?.entries as any[])?.flatMap(entryObj => mapUserUpdate(entryObj, this.currentUser.id_str, json))
     if (events?.length > 0) this.onServerEvent?.(events)
-    this.lastSeenEventIds = {
-      ...json.user_events,
-    }
+    this.lastSeenEventIds = _.pick(json.user_events, ['last_seen_event_id', 'trusted_last_seen_event_id', 'untrusted_last_seen_event_id'])
   }
 
   private pollTimeout: NodeJS.Timeout
