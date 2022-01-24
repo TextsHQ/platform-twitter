@@ -30,6 +30,12 @@ export default class Twitter implements PlatformAPI {
 
   private notifications: Notifications
 
+  private lastSeenEventIds = {
+    last_seen_event_id: 0,
+    trusted_last_seen_event_id: 0,
+    untrusted_last_seen_event_id: 0,
+  }
+
   init = async (cookieJarJSON: string, _: AccountInfo, prefs: Record<string, any>) => {
     this.sendNotificationsThread = prefs?.show_notifications_thread
     if (!cookieJarJSON) return
@@ -44,7 +50,19 @@ export default class Twitter implements PlatformAPI {
     const events = (json.user_events?.entries as any[])?.flatMap(entryObj => mapUserUpdate(entryObj, this.currentUser.id_str, json))
     if (events?.length > 0) this.onServerEvent?.(events)
     const { last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id } = json.user_events
-    this.api.dm_update_last_seen_event_id({ last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id }).then(console.log)
+
+    this.lastSeenEventIds.last_seen_event_id = last_seen_event_id
+
+    // server only cares when one of trusted or untrusted is changed so we check our internal state
+    // we also can only send one of each per request
+    if (trusted_last_seen_event_id !== this.lastSeenEventIds.trusted_last_seen_event_id) {
+      this.lastSeenEventIds.trusted_last_seen_event_id = trusted_last_seen_event_id
+      this.api.dm_update_last_seen_event_id({ last_seen_event_id, trusted_last_seen_event_id }).then(console.log)
+    }
+    if (untrusted_last_seen_event_id !== this.lastSeenEventIds.untrusted_last_seen_event_id) {
+      this.lastSeenEventIds.trusted_last_seen_event_id = trusted_last_seen_event_id
+      this.api.dm_update_last_seen_event_id({ last_seen_event_id, untrusted_last_seen_event_id }).then(console.log)
+    }
   }
 
   private pollTimeout: NodeJS.Timeout
