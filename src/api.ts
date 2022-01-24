@@ -60,7 +60,7 @@ export default class Twitter implements PlatformAPI {
       this.api.dm_update_last_seen_event_id({ last_seen_event_id, trusted_last_seen_event_id }).then(console.log)
     }
     if (untrusted_last_seen_event_id !== this.lastSeenEventIds.untrusted_last_seen_event_id) {
-      this.lastSeenEventIds.trusted_last_seen_event_id = trusted_last_seen_event_id
+      this.lastSeenEventIds.untrusted_last_seen_event_id = untrusted_last_seen_event_id
       this.api.dm_update_last_seen_event_id({ last_seen_event_id, untrusted_last_seen_event_id }).then(console.log)
     }
   }
