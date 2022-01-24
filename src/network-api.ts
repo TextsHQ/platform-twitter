@@ -441,9 +441,9 @@ export default class TwitterAPI {
       url: `${ENDPOINT}1.1/dm/update_last_seen_event_id.json`,
       referer: 'https://twitter.com/messages',
       form: {
-        ...(trusted_last_seen_event_id && { trusted_last_seen_event_id }),
-        ...(untrusted_last_seen_event_id && { untrusted_last_seen_event_id }),
         last_seen_event_id,
+        trusted_last_seen_event_id,
+        untrusted_last_seen_event_id,
       },
     })
 

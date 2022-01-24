@@ -49,19 +49,8 @@ export default class Twitter implements PlatformAPI {
     this.userUpdatesCursor = json.user_events?.cursor
     const events = (json.user_events?.entries as any[])?.flatMap(entryObj => mapUserUpdate(entryObj, this.currentUser.id_str, json))
     if (events?.length > 0) this.onServerEvent?.(events)
-    const { last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id } = json.user_events
-
-    this.lastSeenEventIds.last_seen_event_id = last_seen_event_id
-
-    // server only cares when one of trusted or untrusted is changed so we check our internal state
-    // we also can only send one of each per request
-    if (trusted_last_seen_event_id !== this.lastSeenEventIds.trusted_last_seen_event_id) {
-      this.lastSeenEventIds.trusted_last_seen_event_id = trusted_last_seen_event_id
-      this.api.dm_update_last_seen_event_id({ last_seen_event_id, trusted_last_seen_event_id }).then(console.log)
-    }
-    if (untrusted_last_seen_event_id !== this.lastSeenEventIds.untrusted_last_seen_event_id) {
-      this.lastSeenEventIds.untrusted_last_seen_event_id = untrusted_last_seen_event_id
-      this.api.dm_update_last_seen_event_id({ last_seen_event_id, untrusted_last_seen_event_id }).then(console.log)
+    this.lastSeenEventIds = {
+      ...json.user_events,
     }
   }
 
@@ -283,6 +272,21 @@ export default class Twitter implements PlatformAPI {
 
   sendActivityIndicator = async (type: ActivityType, threadID: string) => {
     if (type === ActivityType.TYPING) await this.api.dm_conversation_typing(threadID)
+
+    if (type === ActivityType.ONLINE) {
+      if (IS_DEV) console.log(ActivityType.ONLINE)
+      // prevent unecessary network trips
+      if (this.lastSeenEventIds.last_seen_event_id === this.lastSeenEventIds.trusted_last_seen_event_id
+         || this.lastSeenEventIds.last_seen_event_id === this.lastSeenEventIds.untrusted_last_seen_event_id) return
+
+      // we can only send one of trusted or untrusted per request
+      // let's select the newest one
+      const lastSeenUpdate = this.lastSeenEventIds.untrusted_last_seen_event_id > this.lastSeenEventIds.trusted_last_seen_event_id
+        ? { last_seen_event_id: this.lastSeenEventIds.last_seen_event_id, untrusted_last_seen_event_id: this.lastSeenEventIds.untrusted_last_seen_event_id }
+        : { last_seen_event_id: this.lastSeenEventIds.last_seen_event_id, trusted_last_seen_event_id: this.lastSeenEventIds.trusted_last_seen_event_id }
+
+      await this.api.dm_update_last_seen_event_id(lastSeenUpdate)
+    }
   }
 
   private readonly handleJSONErrors = (json: any) => {

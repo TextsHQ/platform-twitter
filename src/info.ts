@@ -32,6 +32,7 @@ const info: PlatformInfo = {
     Attribute.CAN_MESSAGE_USERNAME,
     Attribute.SEARCH_ALL_USERS_FOR_GROUP_MENTIONS,
     Attribute.SUPPORTS_REPORT_THREAD,
+    Attribute.SUBSCRIBE_TO_ONLINE_OFFLINE_ACTIVITY,
   ]),
   attachments: {
     gifMimeType: 'image/gif',
