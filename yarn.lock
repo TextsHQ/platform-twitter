@@ -223,10 +223,10 @@ __metadata:
 
 "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk#main":
   version: 0.4.4
-  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=b088cd008c02a72688eface6c2a5fedba1bcbe78"
+  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=5d06670b165b83d129baadcceaed54deed8649be"
   dependencies:
     form-data: ^4.0.0
-  checksum: 9c1f09b019b92c0456279915083f4bef5c105473529b5f52976877f18b3076e9529ddeb02082e52401fb556b92b0b7f395cefc9920732091165f5e67f443bfae
+  checksum: 53ceb0e28098bcaa53d5bb12ccd0e2938b9f60c0ab5aeae7853cd169a27dbbbb72370a4eadda5501ba2eafff928c74c069ed0ed89e38f2c44073a50e6e76523d
   languageName: node
   linkType: hard
 

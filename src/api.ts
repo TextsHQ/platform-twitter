@@ -4,13 +4,13 @@ import mem from 'mem'
 import querystring from 'querystring'
 import { v4 as uuid } from 'uuid'
 import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo, User } from '@textshq/platform-sdk'
+import { pick } from 'lodash'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, mapUser, REACTION_MAP_TO_TWITTER, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
 import TwitterAPI from './network-api'
 import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
 import Notifications from './notifications'
-import _ from 'lodash'
 
 const { IS_DEV, Sentry } = texts
 
@@ -50,7 +50,7 @@ export default class Twitter implements PlatformAPI {
     this.userUpdatesCursor = json.user_events?.cursor
     const events = (json.user_events?.entries as any[])?.flatMap(entryObj => mapUserUpdate(entryObj, this.currentUser.id_str, json))
     if (events?.length > 0) this.onServerEvent?.(events)
-    this.lastSeenEventIds = _.pick(json.user_events, ['last_seen_event_id', 'trusted_last_seen_event_id', 'untrusted_last_seen_event_id'])
+    this.lastSeenEventIds = pick(json.user_events, ['last_seen_event_id', 'trusted_last_seen_event_id', 'untrusted_last_seen_event_id'])
   }
 
   private pollTimeout: NodeJS.Timeout
@@ -271,18 +271,17 @@ export default class Twitter implements PlatformAPI {
 
   sendActivityIndicator = async (type: ActivityType, threadID: string) => {
     if (type === ActivityType.TYPING) await this.api.dm_conversation_typing(threadID)
-
-    if (type === ActivityType.ONLINE) {
-      if (IS_DEV) console.log(ActivityType.ONLINE)
+    else if (type === ActivityType.ONLINE) {
+      const { last_seen_event_id, trusted_last_seen_event_id, untrusted_last_seen_event_id } = this.lastSeenEventIds
       // prevent unecessary network trips
-      if (this.lastSeenEventIds.last_seen_event_id === this.lastSeenEventIds.trusted_last_seen_event_id
-         || this.lastSeenEventIds.last_seen_event_id === this.lastSeenEventIds.untrusted_last_seen_event_id) return
+      if (last_seen_event_id === trusted_last_seen_event_id
+         || last_seen_event_id === untrusted_last_seen_event_id) return
 
       // we can only send one of trusted or untrusted per request
       // let's select the newest one
-      const lastSeenUpdate = this.lastSeenEventIds.untrusted_last_seen_event_id > this.lastSeenEventIds.trusted_last_seen_event_id
-        ? { last_seen_event_id: this.lastSeenEventIds.last_seen_event_id, untrusted_last_seen_event_id: this.lastSeenEventIds.untrusted_last_seen_event_id }
-        : { last_seen_event_id: this.lastSeenEventIds.last_seen_event_id, trusted_last_seen_event_id: this.lastSeenEventIds.trusted_last_seen_event_id }
+      const lastSeenUpdate = untrusted_last_seen_event_id > trusted_last_seen_event_id
+        ? { last_seen_event_id, untrusted_last_seen_event_id }
+        : { last_seen_event_id, trusted_last_seen_event_id }
 
       await this.api.dm_update_last_seen_event_id(lastSeenUpdate)
     }
