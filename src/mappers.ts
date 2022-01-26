@@ -246,6 +246,7 @@ function mapTweet(tweet: any, user = tweet.user): Tweet {
       name: user.name,
       username: user.screen_name,
       imgURL: user.profile_image_url_https,
+      isVerified: user.verified,
     },
     attachments: ((tweet.extended_entities?.media || tweet.entities?.media) as any[])?.map(a => {
       if (a.type === 'video') return getVideo(a)
