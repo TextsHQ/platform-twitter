@@ -39,6 +39,14 @@ const info: PlatformInfo = {
     noSupportForAudio: true,
     noSupportForFiles: true,
     supportsCaption: true,
+
+    // https://developer.twitter.com/en/docs/twitter-api/v1/media/upload-media/uploading-media/media-best-practices
+    maxSize: {
+      // media_upload_init(media_type=image/jpeg, media_category=dm_image): File size exceeds 5242880 bytes.
+      image: 5 * 1024 * 1024,
+      // media_upload_init(media_type=video/mp4, media_category=dm_video): File size exceeds 536870912 bytes.
+      video: 512 * 1024 * 1024,
+    },
   },
   prefs: {
     show_notifications_thread: {
