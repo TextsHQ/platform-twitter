@@ -333,43 +333,50 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
     mapped.isAction = true
     mapped.parseTemplate = true
     const participants = msg.participants as any[]
-    if ([MessageType.JOIN_CONVERSATION, MessageType.PARTICIPANTS_JOIN].includes(type as MessageType)) {
-      mapped.senderID = msg.sender_id
-      mapped.text = `{{sender}} added ${participants.map(p => p.user_id).filter(u => u !== mapped.senderID).map(u => `{{${u}}}`).join(', ')}`
-      mapped.action = {
-        type: MessageActionType.THREAD_PARTICIPANTS_ADDED,
-        participantIDs: participants.map(p => p.user_id),
-        actorParticipantID: mapped.senderID,
-      }
-    } else if (type === MessageType.CONVERSATION_AVATAR_UPDATE) {
-      mapped.senderID = msg.by_user_id
-      mapped.text = '{{sender}} changed the group photo'
-    } else if (type === MessageType.CONVERSATION_NAME_UPDATE) {
-      mapped.senderID = msg.by_user_id
-      mapped.text = `{{sender}} changed the group name to ${msg.conversation_name}`
-      mapped.action = {
-        type: MessageActionType.THREAD_TITLE_UPDATED,
-        title: msg.conversation_name,
-        actorParticipantID: mapped.senderID,
-      }
-    } else if (type === MessageType.PARTICIPANTS_LEAVE) {
-      mapped.text = `${participants.map(p => `{{${p.user_id}}}`).join(', ')} left`
-      mapped.action = {
-        type: MessageActionType.THREAD_PARTICIPANTS_REMOVED,
-        participantIDs: participants.map(p => p.user_id),
-        actorParticipantID: null,
-      }
-    } else if (type === MessageType.TRUST_CONVERSATION) {
-      mapped.senderID = currentUserID
-      if (msg.reason === 'accept') {
-        mapped.text = 'You accepted the request'
-        mapped.action = { type: MessageActionType.MESSAGE_REQUEST_ACCEPTED }
-      } else if (msg.reason === 'follow') {
-        mapped.text = 'You followed this account'
-        mapped.action = { type: MessageActionType.MESSAGE_REQUEST_ACCEPTED }
-      }
-    } else if (type === 'conversation_create') {
-      return null
+    switch (type) {
+      case MessageType.JOIN_CONVERSATION:
+      case MessageType.PARTICIPANTS_JOIN:
+        mapped.senderID = msg.sender_id
+        mapped.text = `{{sender}} added ${participants.map(p => p.user_id).filter(u => u !== mapped.senderID).map(u => `{{${u}}}`).join(', ')}`
+        mapped.action = {
+          type: MessageActionType.THREAD_PARTICIPANTS_ADDED,
+          participantIDs: participants.map(p => p.user_id),
+          actorParticipantID: mapped.senderID,
+        }
+        break
+      case MessageType.CONVERSATION_AVATAR_UPDATE:
+        mapped.senderID = msg.by_user_id
+        mapped.text = '{{sender}} changed the group photo'
+        break
+      case MessageType.CONVERSATION_NAME_UPDATE:
+        mapped.senderID = msg.by_user_id
+        mapped.text = `{{sender}} changed the group name to ${msg.conversation_name}`
+        mapped.action = {
+          type: MessageActionType.THREAD_TITLE_UPDATED,
+          title: msg.conversation_name,
+          actorParticipantID: mapped.senderID,
+        }
+        break
+      case MessageType.PARTICIPANTS_LEAVE:
+        mapped.text = `${participants.map(p => `{{${p.user_id}}}`).join(', ')} left`
+        mapped.action = {
+          type: MessageActionType.THREAD_PARTICIPANTS_REMOVED,
+          participantIDs: participants.map(p => p.user_id),
+          actorParticipantID: null,
+        }
+        break
+      case MessageType.TRUST_CONVERSATION:
+        mapped.senderID = currentUserID
+        if (msg.reason === 'accept') {
+          mapped.text = 'You accepted the request'
+          mapped.action = { type: MessageActionType.MESSAGE_REQUEST_ACCEPTED }
+        } else if (msg.reason === 'follow') {
+          mapped.text = 'You followed this account'
+          mapped.action = { type: MessageActionType.MESSAGE_REQUEST_ACCEPTED }
+        }
+        break
+      case 'conversation_create':
+        return null
     }
   }
   if (mapped.senderID != null) mapped.senderID = String(mapped.senderID)
