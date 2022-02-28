@@ -283,6 +283,7 @@ export default class Twitter implements PlatformAPI {
         ? { last_seen_event_id, untrusted_last_seen_event_id }
         : { last_seen_event_id, trusted_last_seen_event_id }
 
+      texts.log('sending dm_update_last_seen_event_id', lastSeenUpdate)
       await this.api.dm_update_last_seen_event_id(lastSeenUpdate)
     }
   }

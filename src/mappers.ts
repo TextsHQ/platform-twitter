@@ -497,7 +497,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
           type: ServerEventType.STATE_SYNC,
           mutationType: 'update',
           objectName: 'thread',
-          objectIDs: { threadID },
+          objectIDs: {},
           entries: [
             {
               id: threadID,
@@ -519,7 +519,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
         type: ServerEventType.STATE_SYNC,
         mutationType: 'update',
         objectName: 'thread',
-        objectIDs: { threadID },
+        objectIDs: {},
         entries: [
           {
             id: threadID,
@@ -534,7 +534,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
         type: ServerEventType.STATE_SYNC,
         mutationType: 'update',
         objectName: 'thread',
-        objectIDs: { threadID },
+        objectIDs: {},
         entries: [
           {
             id: threadID,
@@ -549,7 +549,7 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
         type: ServerEventType.STATE_SYNC,
         mutationType: 'delete',
         objectName: 'thread',
-        objectIDs: { threadID },
+        objectIDs: {},
         entries: [threadID],
       }
 
