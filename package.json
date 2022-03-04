@@ -14,7 +14,7 @@
     "hooks": {}
   },
   "dependencies": {
-    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#main",
+    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#1fecb954d2530c482aad8c40b4ef5d4be6b2ae23",
     "eventsource": "^1.0.7",
     "form-data": "^4.0.0",
     "he": "^1.2.0",

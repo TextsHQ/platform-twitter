@@ -307,7 +307,7 @@ export default class Twitter implements PlatformAPI {
       ? this.notifications.markRead(messageCursor)
       : this.api.dm_conversation_mark_read(threadID, messageID))
 
-  getAsset = async (key: string, hex?: string) => {
+  getAsset = async (_, key: string, hex?: string) => {
     if (key === 'media') {
       const url = Buffer.from(hex, 'hex').toString()
       return this.api.authenticatedGet(url)
