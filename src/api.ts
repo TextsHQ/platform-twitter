@@ -202,7 +202,7 @@ export default class Twitter implements PlatformAPI {
   }
 
   getThread = async (threadID: string) => {
-    if (threadID === NOTIFICATIONS_THREAD_ID) return this.notifications.getThread()
+    if (threadID === NOTIFICATIONS_THREAD_ID) return this.notifications?.getThread()
     if (!threadID || typeof threadID !== 'string') throw Error('invalid threadID')
     const json = await this.api.dm_conversation_thread(threadID, undefined)
     if (!json) return
