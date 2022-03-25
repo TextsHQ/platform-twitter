@@ -1,4 +1,4 @@
-import { v4 as uuid } from 'uuid'
+import { randomUUID as uuid } from 'crypto'
 import EventSource from 'eventsource'
 import { CookieJar, Cookie } from 'tough-cookie'
 import FormData from 'form-data'

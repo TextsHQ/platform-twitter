@@ -221,12 +221,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk#1fecb954d2530c482aad8c40b4ef5d4be6b2ae23":
+"@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk#main":
   version: 0.4.4
-  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=1fecb954d2530c482aad8c40b4ef5d4be6b2ae23"
+  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=1c200ae33d4adccc1404fb55669b13a70172a1b9"
   dependencies:
     form-data: ^4.0.0
-  checksum: af400f2813b085010608fb2b09f89e642d7f97094a6cdde4c9ae4554c9b65ac31b839a0b6fc54215fe4e90b0037089e9e4d163a0b424e95b5ffcbb0a82ce60e2
+  checksum: d3d415d105399bdc956a27f10ec2d589503721a0704a6b754bc03fac0b2a9b4d58fca830032b7f959d15ba51763aea7eafaa0591d7583e6608d6d852d588dfe0
   languageName: node
   linkType: hard
 
@@ -235,14 +235,13 @@ __metadata:
   resolution: "@textshq/platform-twitter@workspace:."
   dependencies:
     "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config"
-    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#1fecb954d2530c482aad8c40b4ef5d4be6b2ae23"
+    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#main"
     "@types/eslint": ^7.2.10
     "@types/eventsource": ^1.1.5
     "@types/he": ^1.1.1
     "@types/lodash": ^4.14.168
     "@types/node": ^16.11.7
     "@types/tough-cookie": ^4.0.0
-    "@types/uuid": ^8.3.0
     eslint: ^7.13.0
     eventsource: ^1.0.7
     form-data: ^4.0.0
@@ -252,7 +251,6 @@ __metadata:
     mem: ^8.0.0
     tough-cookie: ^4.0.0
     typescript: ^4.1.2
-    uuid: ^8.3.1
   languageName: unknown
   linkType: soft
 
@@ -333,13 +331,6 @@ __metadata:
   version: 4.0.0
   resolution: "@types/tough-cookie@npm:4.0.0"
   checksum: 454fa8d4d64532992274ebf2ff5ea0061b0dd32a2282255a3e793f04a8b64a9c4c1f9e0f4ed83c514c852b7b604d69336c66c80de4a857cb41a81e9572981e7f
-  languageName: node
-  linkType: hard
-
-"@types/uuid@npm:^8.3.0":
-  version: 8.3.0
-  resolution: "@types/uuid@npm:8.3.0"
-  checksum: 0f46b15020b9c252473fb327a6491fd7d238c7b5bbaebd32195a0de178db040f6abb96902507ba25dd4a673cdd9cc28b8880512dba54561e8bc60d8f326c1e30
   languageName: node
   linkType: hard
 
@@ -2807,15 +2798,6 @@ __metadata:
     querystringify: ^2.1.1
     requires-port: ^1.0.0
   checksum: 3ede937508436c9685a60c90634894aaf745d75160c0092c7f36335c79563effedf1a9fe0181f98e9c5165af73ba5f8fe1dc6e274c6556ae170be01f6e54c67f
-  languageName: node
-  linkType: hard
-
-"uuid@npm:^8.3.1":
-  version: 8.3.1
-  resolution: "uuid@npm:8.3.1"
-  bin:
-    uuid: dist/bin/uuid
-  checksum: e60e1d571d85f17a0c5a68010a300cf68c7bda976c2e9ae9ff672ee62556e62fd4e7d9e8d8712ec225056caacce28661b11f372c7977c4a2d23fbdada4d7d49a
   languageName: node
   linkType: hard
 

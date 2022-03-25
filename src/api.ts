@@ -2,7 +2,7 @@ import { promises as fs } from 'fs'
 import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
 import querystring from 'querystring'
-import { v4 as uuid } from 'uuid'
+import { randomUUID as uuid } from 'crypto'
 import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo, User } from '@textshq/platform-sdk'
 import { pick } from 'lodash'
 
