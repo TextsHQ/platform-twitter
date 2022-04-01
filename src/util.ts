@@ -4,8 +4,6 @@ export function* chunkBuffer(buffer: Buffer, maxChunkSize: number): Generator<[n
     yield [chunkIndex, buffer.slice(start, start + maxChunkSize)]
   }
 }
-export const promiseDelay = (ms: number) =>
-  new Promise<void>(resolve => setTimeout(() => resolve(), ms))
 
 const symbols = /[\r\n%#()<>?[\\\]^`{|}]/g
 export function urlEncodeSVG(_data: string) {

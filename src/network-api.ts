@@ -1,12 +1,12 @@
-import { randomUUID as uuid } from 'crypto'
+import crypto, { randomUUID as uuid } from 'crypto'
 import EventSource from 'eventsource'
 import { CookieJar, Cookie } from 'tough-cookie'
 import FormData from 'form-data'
-import crypto from 'crypto'
+import { setTimeout as setTimeoutAsync } from 'timers/promises'
 import util from 'util'
 import { texts, ReAuthError, FetchOptions } from '@textshq/platform-sdk'
 
-import { chunkBuffer, promiseDelay } from './util'
+import { chunkBuffer } from './util'
 
 const { constants, IS_DEV, Sentry } = texts
 const { USER_AGENT } = constants
@@ -249,7 +249,7 @@ export default class TwitterAPI {
       if ((Date.now() - start) > PROCESSING_TIMEOUT) throw Error('media processing taking longer than expected')
       const wait = pi.check_after_secs * 1000
       if (IS_DEV) console.log(`waiting ${wait}ms for ${mediaID}`)
-      await promiseDelay(wait)
+      await setTimeoutAsync(wait)
       const statusResponse = await this.media_upload_status(referer, mediaID)
       if (IS_DEV) console.log('media_upload_status', statusResponse)
       pi = statusResponse.processing_info
