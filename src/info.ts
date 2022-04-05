@@ -19,6 +19,12 @@ const info: PlatformInfo = {
   browserLogin: {
     loginURL: 'https://twitter.com/login',
     authCookieName: 'auth_token',
+    runJSOnNavigate: `
+      // hide close button on login page on mobile
+      const ss = document.createElement('style')
+      ss.innerText = '[aria-label="Close"]{display:none!important}'
+      document.head.appendChild(ss)
+    `,
   },
   typingDurationMs: 3000,
   attributes: new Set([
