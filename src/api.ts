@@ -123,6 +123,7 @@ export default class Twitter implements PlatformAPI {
   }
 
   login = async ({ cookieJarJSON }): Promise<LoginResult> => {
+    if (!cookieJarJSON) return { type: 'error', errorMessage: 'Cookies not found' }
     await this.api.setLoginState(CookieJar.fromJSON(cookieJarJSON as any))
     await this.afterAuth()
     if (this.currentUser?.id_str) return { type: 'success' }
