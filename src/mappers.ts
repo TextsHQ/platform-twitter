@@ -626,7 +626,7 @@ export const mapNotificationEntities = (globalObjects: GlobalObjects, entities: 
     return {
       from: offset + entity.fromIndex,
       to: offset + entity.toIndex,
-      mentionedUser: id ? { id, username: globalObjects.users[id]?.screen_name } : undefined,
+      mentionedUser: id ? { id: String(id), username: globalObjects.users[id]?.screen_name } : undefined,
       bold: entity.format === 'Strong' || undefined,
     }
   })
@@ -642,7 +642,7 @@ export function mapNotification(globalObjects: GlobalObjects, id: string, notifi
     entities.unshift(...users.map<TextEntity>((user, i) => ({
       from: i + (2 * i),
       to: i + (2 * i) + 1,
-      mentionedUser: { id: user.id, username: user.screen_name },
+      mentionedUser: { id: String(user.id), username: user.screen_name },
       replaceWithMedia: {
         mediaType: 'img',
         srcURL: user.profile_image_url_https.replace('_normal', ''),
@@ -669,6 +669,7 @@ export function mapNotification(globalObjects: GlobalObjects, id: string, notifi
     },
     timestamp,
     senderID: entry.icon.id.split('_')?.[0],
+    isSender: false,
     tweets: tweet ? [mapTweet(tweet, globalObjects.users[tweet.user_id_str])] : undefined,
     reactions: tweet?.favorited ? [{ id: currentUserID, participantID: currentUserID, reactionKey: 'heart' }] : undefined,
   }
