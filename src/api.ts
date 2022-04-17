@@ -65,7 +65,7 @@ export default class Twitter implements PlatformAPI {
         // if (IS_DEV) console.log(JSON.stringify(json, null, 2))
         if (json?.user_events) {
           this.processUserUpdates(json)
-        } else if (json?.errors[0]?.code === 88) { // RateLimitExceeded
+        } else if (json?.errors?.[0]?.code === 88) { // RateLimitExceeded
           const rateLimitReset = headers['x-rate-limit-reset']
           const resetMs = (+rateLimitReset * 1000) - Date.now()
           nextFetchTimeoutMs = resetMs
