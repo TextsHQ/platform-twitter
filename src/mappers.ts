@@ -289,7 +289,7 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
     const removeIndicies = tweet?.indices
     const entities = mapEntities(
       msg.message_data.entities,
-      mapped.text.length === removeIndicies?.[1] ? removeIndicies : undefined, // hide tweet url only if no other text is present
+      mapped.text?.length === removeIndicies?.[1] ? removeIndicies : undefined, // hide tweet url only if no other text is present
     )
     if (entities?.length > 0) {
       mapped.textAttributes = {
