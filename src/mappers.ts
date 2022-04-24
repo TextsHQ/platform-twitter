@@ -391,13 +391,14 @@ function getReactionMessages(m: TwitterMessage, currentUserID: string) {
     const truncated = truncate(m.message_data?.text)
     const senderID = String(reaction.sender_id)
     const reactionKey = REACTION_MAP_TO_NORMALIZED[reaction.reaction_key] || reaction.reaction_key
+    const isSender = String(reaction.sender_id) === currentUserID
     return {
       _original: JSON.stringify(reaction),
       id: reaction.id,
       timestamp: new Date(+reaction.time),
       senderID,
-      isSender: String(reaction.sender_id) === currentUserID,
-      text: `{{sender}} reacted with ${supportedReactions[reactionKey]?.render || reaction.reaction_key}${truncated ? `: ${truncated}` : ''}`,
+      isSender,
+      text: `${isSender ? 'You' : '{{sender}}'} reacted with ${supportedReactions[reactionKey]?.render || reaction.reaction_key}${truncated ? `: ${truncated}` : ''}`,
       action: {
         type: MessageActionType.MESSAGE_REACTION_CREATED,
         messageID: m.id,
