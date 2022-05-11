@@ -221,12 +221,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk#main":
+"@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk#2dc321597a9ed232946e3d7bb2c3831cb527b7ba":
   version: 0.4.4
-  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=1c200ae33d4adccc1404fb55669b13a70172a1b9"
+  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=2dc321597a9ed232946e3d7bb2c3831cb527b7ba"
   dependencies:
     form-data: ^4.0.0
-  checksum: d3d415d105399bdc956a27f10ec2d589503721a0704a6b754bc03fac0b2a9b4d58fca830032b7f959d15ba51763aea7eafaa0591d7583e6608d6d852d588dfe0
+  checksum: d5868c2e98835a9dbce3141d3e63879ae5804d1739122b6ed9db7ce624381996e67d44e4741bfea3fecff4c71d3800d92313ee036310d766ded9cf4c476dad3f
   languageName: node
   linkType: hard
 
@@ -235,7 +235,7 @@ __metadata:
   resolution: "@textshq/platform-twitter@workspace:."
   dependencies:
     "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config"
-    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#main"
+    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#2dc321597a9ed232946e3d7bb2c3831cb527b7ba"
     "@types/eslint": ^7.2.10
     "@types/eventsource": ^1.1.5
     "@types/he": ^1.1.1
