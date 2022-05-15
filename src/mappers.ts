@@ -36,7 +36,6 @@ const TWITTER_EPOCH = 1288834974657
 function getTimestampFromSnowflake(snowflake: string) {
   if (!snowflake) return
   const int = BigInt.asUintN(64, BigInt(snowflake))
-  // @ts-expect-error
   const dateBits = Number(int >> 22n)
   return new Date(dateBits + TWITTER_EPOCH)
 }
