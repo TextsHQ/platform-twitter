@@ -665,4 +665,82 @@ export default class TwitterAPI {
       })),
       referer: `https://twitter.com/${screen_name}`,
     })
+
+  private getPushDeviceInfo = (endpoint: string, p256dh: string, auth: string) => ({
+    // unknown, optional value
+    // checksum: undefined,
+    os_version: 'Mac/Chrome',
+    udid: 'Mac/Chrome',
+    env: 3,
+    locale: 'en',
+    protocol_version: 1,
+    token: endpoint,
+    encryption_key1: p256dh,
+    encryption_key2: auth,
+  })
+
+  notifications_settings_login = (endpoint: string, p256dh: string, auth: string) => {
+    this.fetch({
+      url: `${ENDPOINT}1.1/notifications/settings/login.json`,
+      method: 'POST',
+      referer: 'https://twitter.com/settings/push_notifications',
+      body: JSON.stringify({
+        push_device_info: this.getPushDeviceInfo(endpoint, p256dh, auth),
+      }),
+    })
+  }
+
+  notifications_settings_checkin = (endpoint: string, p256dh: string, auth: string) => {
+    this.fetch({
+      url: `${ENDPOINT}1.1/notifications/settings/checkin.json`,
+      method: 'POST',
+      referer: 'https://twitter.com/settings/push_notifications',
+      body: JSON.stringify({
+        push_device_info: this.getPushDeviceInfo(endpoint, p256dh, auth),
+      }),
+    })
+  }
+
+  notifications_settings_logout = (endpoint: string, p256dh: string, auth: string) => {
+    this.fetch({
+      url: `${ENDPOINT}1.1/notifications/settings/logout.json`,
+      method: 'POST',
+      referer: 'https://twitter.com/settings/push_notifications',
+      body: JSON.stringify(this.getPushDeviceInfo(endpoint, p256dh, auth)),
+    })
+  }
+
+  notifications_settings_save = (endpoint: string, p256dh: string, auth: string) => {
+    this.fetch({
+      url: `${ENDPOINT}1.1/notifications/settings/save.json`,
+      method: 'POST',
+      referer: 'https://twitter.com/settings/push_notifications',
+      body: JSON.stringify({
+        push_device_info: {
+          ...this.getPushDeviceInfo(endpoint, p256dh, auth),
+          settings: {
+            AddressbookSetting: 'off',
+            AdsSetting: 'off',
+            DirectMessagesSetting: 'on',
+            DmReactionSetting: 'reaction_your_own', // or reaction_everyone
+            FollowersNonVitSetting: 'off',
+            FollowersVitSetting: 'off',
+            LifelineAlertsSetting: 'off',
+            LikesNonVitSetting: 'off',
+            LikesVitSetting: 'off',
+            LiveVideoSetting: 'off',
+            MentionsSetting: 'off',
+            MomentsSetting: 'off',
+            NewsSetting: 'off',
+            PhotoTagsSetting: 'off',
+            RecommendationsSetting: 'off',
+            RetweetsSetting: 'off',
+            SpacesSetting: 'off',
+            TopicsSetting: 'off',
+            TweetsSetting: 'off',
+          },
+        },
+      }),
+    })
+  }
 }

@@ -3,7 +3,7 @@ import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
 import querystring from 'querystring'
 import { randomUUID as uuid } from 'crypto'
-import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo, User } from '@textshq/platform-sdk'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, ReAuthError, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo, User, Awaitable } from '@textshq/platform-sdk'
 import { pick } from 'lodash'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, mapUser, REACTION_MAP_TO_TWITTER, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
@@ -388,5 +388,15 @@ export default class Twitter implements PlatformAPI {
       cookieJar: this.api.cookieJar.toJSON(),
     }])
     return true
+  }
+
+  registerForPushNotifications = (deviceToken: string, secret?: Buffer) => {
+    // stub
+    return false
+  }
+
+  unregisterForPushNotifications = (deviceToken: string) => {
+    // stub
+    return false
   }
 }
