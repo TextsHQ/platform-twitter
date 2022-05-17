@@ -67,7 +67,8 @@ enum MEDIA_CATEGORY {
 
 const EXT = 'mediaColor,altText,mediaStats,highlightedLabel,cameraMoment'
 
-const ENDPOINT = 'https://api.twitter.com/'
+const API_ENDPOINT = 'https://api.twitter.com/'
+const ENDPOINT = 'https://twitter.com/'
 const UPLOAD_ENDPOINT = 'https://upload.twitter.com/'
 const MAX_CHUNK_SIZE = 1 * 1024 * 1024
 
@@ -280,9 +281,9 @@ export default class TwitterAPI {
   }
 
   live_pipeline_events = (topic = '') => this.cookieJar
-    && new EventSource(ENDPOINT + 'live_pipeline/events?topic=' + encodeURIComponent(topic), {
+    && new EventSource(API_ENDPOINT + 'live_pipeline/events?topic=' + encodeURIComponent(topic), {
       headers: {
-        Cookie: this.cookieJar.getCookieStringSync(ENDPOINT),
+        Cookie: this.cookieJar.getCookieStringSync(API_ENDPOINT),
         ...commonHeaders,
       },
     })
@@ -290,7 +291,7 @@ export default class TwitterAPI {
   live_pipeline_update_subscriptions = (sessionID: string, subTopics: string[], unsubTopics: string[]) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/live_pipeline/update_subscriptions`,
+      url: `${API_ENDPOINT}1.1/live_pipeline/update_subscriptions`,
       referer: 'https://twitter.com/',
       headers: {
         'livepipeline-session': sessionID,
@@ -303,20 +304,20 @@ export default class TwitterAPI {
 
   account_verify_credentials = () =>
     this.fetch({
-      url: `${ENDPOINT}1.1/account/verify_credentials.json`,
+      url: `${API_ENDPOINT}1.1/account/verify_credentials.json`,
       referer: 'https://twitter.com/',
     })
 
   account_logout = () =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/account/logout.json`,
+      url: `${API_ENDPOINT}1.1/account/logout.json`,
       referer: 'https://twitter.com/logout',
     })
 
   typeahead = (q: string) =>
     this.fetch({
-      url: `${ENDPOINT}1.1/search/typeahead.json`,
+      url: `${API_ENDPOINT}1.1/search/typeahead.json`,
       searchParams: {
         q,
         src: 'compose_message',
@@ -346,7 +347,7 @@ export default class TwitterAPI {
     if (!form.media_id) delete form.media_id
     return this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/new.json`,
+      url: `${API_ENDPOINT}1.1/dm/new.json`,
       referer: `https://twitter.com/messages/${threadID}`,
       form,
     })
@@ -355,7 +356,7 @@ export default class TwitterAPI {
   dm_destroy = (threadID: string, messageID: string) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/destroy.json`,
+      url: `${API_ENDPOINT}1.1/dm/destroy.json`,
       referer: `https://twitter.com/messages/${threadID}`,
       form: {
         ...commonDMParams,
@@ -374,7 +375,7 @@ export default class TwitterAPI {
       ext: EXT,
     }
     return this.fetch({
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}.json`,
+      url: `${API_ENDPOINT}1.1/dm/conversation/${threadID}.json`,
       referer: `https://twitter.com/messages/${threadID}`,
       searchParams,
     })
@@ -396,7 +397,7 @@ export default class TwitterAPI {
 
   dm_inbox_initial_state = () =>
     this.fetch({
-      url: `${ENDPOINT}1.1/dm/inbox_initial_state.json`,
+      url: `${API_ENDPOINT}1.1/dm/inbox_initial_state.json`,
       referer: 'https://twitter.com/messages',
       searchParams: {
         ...commonParams,
@@ -408,7 +409,7 @@ export default class TwitterAPI {
 
   dm_inbox_timeline = (inboxType: string, pagination: { min_id?: string, max_id?: string }) =>
     this.fetch({
-      url: `${ENDPOINT}1.1/dm/inbox_timeline/${inboxType}.json`,
+      url: `${API_ENDPOINT}1.1/dm/inbox_timeline/${inboxType}.json`,
       referer: 'https://twitter.com/messages',
       searchParams: {
         ...commonParams,
@@ -422,7 +423,7 @@ export default class TwitterAPI {
   dm_user_updates = (cursor: string) =>
     this.fetch({
       includeHeaders: true,
-      url: `${ENDPOINT}1.1/dm/user_updates.json`,
+      url: `${API_ENDPOINT}1.1/dm/user_updates.json`,
       referer: 'https://twitter.com/messages',
       headers: {
         'x-twitter-polling': 'true',
@@ -438,7 +439,7 @@ export default class TwitterAPI {
   dm_update_last_seen_event_id = ({ last_seen_event_id, trusted_last_seen_event_id = undefined, untrusted_last_seen_event_id = undefined }) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/update_last_seen_event_id.json`,
+      url: `${API_ENDPOINT}1.1/dm/update_last_seen_event_id.json`,
       referer: 'https://twitter.com/messages',
       form: {
         last_seen_event_id,
@@ -450,7 +451,7 @@ export default class TwitterAPI {
   dm_reaction = (action: string, reactionKey: string, threadID: string, messageID: string) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/reaction/${action}.json`,
+      url: `${API_ENDPOINT}1.1/dm/reaction/${action}.json`,
       referer: `https://twitter.com/messages/${threadID}`,
       searchParams: {
         reaction_key: reactionKey,
@@ -468,7 +469,7 @@ export default class TwitterAPI {
   dm_conversation_mark_read = (threadID: string, messageID: string) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/mark_read.json`,
+      url: `${API_ENDPOINT}1.1/dm/conversation/${threadID}/mark_read.json`,
       referer: `https://twitter.com/messages/${threadID}`,
       form: {
         conversationId: threadID,
@@ -479,14 +480,14 @@ export default class TwitterAPI {
   dm_conversation_typing = (threadID: string) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/typing.json`,
+      url: `${API_ENDPOINT}1.1/dm/conversation/${threadID}/typing.json`,
       referer: `https://twitter.com/messages/${threadID}`,
     })
 
   dm_conversation_delete = (threadID: string) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/delete.json`,
+      url: `${API_ENDPOINT}1.1/dm/conversation/${threadID}/delete.json`,
       referer: `https://twitter.com/messages/${threadID}`,
       form: commonDMParams,
     })
@@ -494,7 +495,7 @@ export default class TwitterAPI {
   dm_conversation_update_name = (threadID: string, title: string) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/update_name.json`,
+      url: `${API_ENDPOINT}1.1/dm/conversation/${threadID}/update_name.json`,
       referer: `https://twitter.com/messages/${threadID}/group-info`,
       form: {
         name: title,
@@ -504,7 +505,7 @@ export default class TwitterAPI {
   dm_conversation_update_avatar = (threadID: string, avatarID: string) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/update_avatar.json`,
+      url: `${API_ENDPOINT}1.1/dm/conversation/${threadID}/update_avatar.json`,
       referer: `https://twitter.com/messages/${threadID}/group-info`,
       form: {
         avatar_id: avatarID,
@@ -514,7 +515,7 @@ export default class TwitterAPI {
   dm_conversation_add_participants = (threadID: string, participantIDs: string[]) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/add_participants.json`,
+      url: `${API_ENDPOINT}1.1/dm/conversation/${threadID}/add_participants.json`,
       referer: `https://twitter.com/messages/${threadID}/group-info`,
       form: {
         participant_ids: participantIDs.join(','),
@@ -524,7 +525,7 @@ export default class TwitterAPI {
   dm_conversation_disable_notifications = (threadID: string, duration = 0) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/disable_notifications.json`,
+      url: `${API_ENDPOINT}1.1/dm/conversation/${threadID}/disable_notifications.json`,
       referer: `https://twitter.com/messages/${threadID}`,
       form: { duration },
     })
@@ -532,7 +533,7 @@ export default class TwitterAPI {
   dm_conversation_enable_notifications = (threadID: string) =>
     this.fetch({
       method: 'POST',
-      url: `${ENDPOINT}1.1/dm/conversation/${threadID}/enable_notifications.json`,
+      url: `${API_ENDPOINT}1.1/dm/conversation/${threadID}/enable_notifications.json`,
       referer: `https://twitter.com/messages/${threadID}`,
       form: {},
     })
