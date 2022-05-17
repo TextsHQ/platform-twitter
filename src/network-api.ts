@@ -666,18 +666,21 @@ export default class TwitterAPI {
       referer: `https://twitter.com/${screen_name}`,
     })
 
-  private getPushDeviceInfo = (endpoint: string, p256dh: string, auth: string) => ({
-    // unknown, optional value
-    // checksum: undefined,
-    os_version: 'Mac/Chrome',
-    udid: 'Mac/Chrome',
-    env: 3,
-    locale: 'en',
-    protocol_version: 1,
-    token: endpoint,
-    encryption_key1: p256dh,
-    encryption_key2: auth,
-  })
+  private getPushDeviceInfo = (endpoint: string, p256dh: string, auth: string) => {
+    const deviceId = 'Mac/Chrome' // can be Mac/Firefox, Mac/Safari, Mac/Other Browser, Other OS/Other Browser
+    return {
+      // checksum is optional? "templateChecksum"?
+      // checksum: undefined,
+      os_version: deviceId,
+      udid: deviceId,
+      env: 3,
+      locale: 'en',
+      protocol_version: 1,
+      token: endpoint,
+      encryption_key1: p256dh,
+      encryption_key2: auth,
+    }
+  }
 
   notifications_settings_login = (endpoint: string, p256dh: string, auth: string) => {
     this.fetch({
