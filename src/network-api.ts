@@ -70,6 +70,7 @@ const EXT = 'mediaColor,altText,mediaStats,highlightedLabel,cameraMoment'
 const API_ENDPOINT = 'https://api.twitter.com/'
 const ENDPOINT = 'https://twitter.com/'
 const UPLOAD_ENDPOINT = 'https://upload.twitter.com/'
+const GRAPHQL_ENDPOINT = 'https://twitter.com/i/api/graphql/'
 const MAX_CHUNK_SIZE = 1 * 1024 * 1024
 
 const genCSRFToken = () =>
@@ -389,7 +390,7 @@ export default class TwitterAPI {
       participant_ids: participantIDs.join(','),
     }
     return this.fetch({
-      url: 'https://api.twitter.com/1.1/dm/conversation.json',
+      url: `${API_ENDPOINT}1.1/dm/conversation.json`,
       referer: 'https://twitter.com/messages/compose',
       searchParams,
     })
@@ -597,7 +598,7 @@ export default class TwitterAPI {
   favoriteTweet = (tweetID: string) =>
     this.fetch({
       method: 'POST',
-      url: 'https://twitter.com/i/api/graphql/lI07N6Otwv1PhnEgXILM7A/FavoriteTweet',
+      url: `${GRAPHQL_ENDPOINT}lI07N6Otwv1PhnEgXILM7A/FavoriteTweet`,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -613,7 +614,7 @@ export default class TwitterAPI {
   unfavoriteTweet = (tweetID: string) =>
     this.fetch({
       method: 'POST',
-      url: 'https://twitter.com/i/api/graphql/ZYKSe-w7KEslx3JhSIk5LA/UnfavoriteTweet',
+      url: `${GRAPHQL_ENDPOINT}ZYKSe-w7KEslx3JhSIk5LA/UnfavoriteTweet`,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -629,7 +630,7 @@ export default class TwitterAPI {
   createTweet = (text: string, in_reply_to_tweet_id: string) =>
     this.fetch({
       method: 'POST',
-      url: 'https://twitter.com/i/api/graphql/91Nf2Ip_E9aTPnxvX7rP_A/CreateTweet',
+      url: `${GRAPHQL_ENDPOINT}91Nf2Ip_E9aTPnxvX7rP_A/CreateTweet`,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -658,7 +659,7 @@ export default class TwitterAPI {
   userByScreenName = (screen_name: string) =>
     this.fetch({
       method: 'GET',
-      url: 'https://twitter.com/i/api/graphql/7mjxD3-C6BxitPMVQ6w0-Q/UserByScreenName?variables=' + encodeURIComponent(JSON.stringify({
+      url: `${GRAPHQL_ENDPOINT}7mjxD3-C6BxitPMVQ6w0-Q/UserByScreenName?variables=` + encodeURIComponent(JSON.stringify({
         screen_name,
         withSafetyModeUserFields: true,
         withSuperFollowsUserFields: true,
