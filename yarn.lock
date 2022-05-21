@@ -250,7 +250,7 @@ __metadata:
     lodash: ^4.17.20
     mem: ^8.0.0
     tough-cookie: ^4.0.0
-    typescript: ^4.6.3
+    typescript: ^4.6.4
   languageName: unknown
   linkType: soft
 
@@ -2755,7 +2755,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^4.6.3":
+"typescript@npm:^4.6.4":
   version: 4.6.4
   resolution: "typescript@npm:4.6.4"
   bin:
@@ -2765,7 +2765,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^4.6.3#~builtin<compat/typescript>":
+"typescript@patch:typescript@^4.6.4#~builtin<compat/typescript>":
   version: 4.6.4
   resolution: "typescript@patch:typescript@npm%3A4.6.4#~builtin<compat/typescript>::version=4.6.4&hash=7ad353"
   bin:
