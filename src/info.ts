@@ -39,6 +39,7 @@ const info: PlatformInfo = {
     Attribute.SEARCH_ALL_USERS_FOR_GROUP_MENTIONS,
     Attribute.SUPPORTS_REPORT_THREAD,
     Attribute.SUBSCRIBE_TO_ONLINE_OFFLINE_ACTIVITY,
+    Attribute.SUPPORTS_PUSH_NOTIFICATIONS,
   ]),
   attachments: {
     gifMimeType: 'image/gif',
@@ -59,6 +60,11 @@ const info: PlatformInfo = {
       label: 'Show Twitter notifications as a thread',
       type: 'checkbox',
       default: false,
+    },
+  },
+  notifications: {
+    web: {
+      vapidKey: 'BF5oEo0xDUpgylKDTlsd8pZmxQA1leYINiY-rSscWYK_3tWAkz4VMbtf1MLE_Yyd6iII6o-e3Q9TCN5vZMzVMEs',
     },
   },
   getUserProfileLink: ({ username }) =>
