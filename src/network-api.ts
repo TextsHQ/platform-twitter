@@ -682,40 +682,37 @@ export default class TwitterAPI {
     }
   }
 
-  notifications_settings_login = (endpoint: string, p256dh: string, auth: string) => {
+  notifications_settings_login = (endpoint: string, p256dh: string, auth: string) =>
     this.fetch({
-      url: `${ENDPOINT}1.1/notifications/settings/login.json`,
+      url: `${API_ENDPOINT}1.1/notifications/settings/login.json`,
       method: 'POST',
       referer: 'https://twitter.com/settings/push_notifications',
       body: JSON.stringify({
         push_device_info: this.getPushDeviceInfo(endpoint, p256dh, auth),
       }),
     })
-  }
 
-  notifications_settings_checkin = (endpoint: string, p256dh: string, auth: string) => {
+  notifications_settings_checkin = (endpoint: string, p256dh: string, auth: string) =>
     this.fetch({
-      url: `${ENDPOINT}1.1/notifications/settings/checkin.json`,
+      url: `${API_ENDPOINT}1.1/notifications/settings/checkin.json`,
       method: 'POST',
       referer: 'https://twitter.com/settings/push_notifications',
       body: JSON.stringify({
         push_device_info: this.getPushDeviceInfo(endpoint, p256dh, auth),
       }),
     })
-  }
 
-  notifications_settings_logout = (endpoint: string, p256dh: string, auth: string) => {
+  notifications_settings_logout = (endpoint: string, p256dh: string, auth: string) =>
     this.fetch({
-      url: `${ENDPOINT}1.1/notifications/settings/logout.json`,
+      url: `${API_ENDPOINT}1.1/notifications/settings/logout.json`,
       method: 'POST',
       referer: 'https://twitter.com/settings/push_notifications',
       body: JSON.stringify(this.getPushDeviceInfo(endpoint, p256dh, auth)),
     })
-  }
 
-  notifications_settings_save = (endpoint: string, p256dh: string, auth: string) => {
+  notifications_settings_save = (endpoint: string, p256dh: string, auth: string) =>
     this.fetch({
-      url: `${ENDPOINT}1.1/notifications/settings/save.json`,
+      url: `${API_ENDPOINT}1.1/notifications/settings/save.json`,
       method: 'POST',
       referer: 'https://twitter.com/settings/push_notifications',
       body: JSON.stringify({
@@ -745,5 +742,4 @@ export default class TwitterAPI {
         },
       }),
     })
-  }
 }

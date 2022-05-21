@@ -62,6 +62,11 @@ const info: PlatformInfo = {
       default: false,
     },
   },
+  notifications: {
+    web: {
+      vapidKey: 'BF5oEo0xDUpgylKDTlsd8pZmxQA1leYINiY-rSscWYK_3tWAkz4VMbtf1MLE_Yyd6iII6o-e3Q9TCN5vZMzVMEs',
+    },
+  },
   getUserProfileLink: ({ username }) =>
     username && `https://twitter.com/${username}`,
 }

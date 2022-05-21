@@ -390,13 +390,13 @@ export default class Twitter implements PlatformAPI {
     return true
   }
 
-  registerForPushNotifications = (deviceToken: string, secret?: Buffer) => {
-    // stub
-    return false
+  registerForPushNotifications = async (type: 'web', token: string) => {
+    const parsed: PushSubscriptionJSON = JSON.parse(token)
+    await this.api.notifications_settings_login(parsed.endpoint, parsed.keys.p256dh, parsed.keys.auth)
   }
 
-  unregisterForPushNotifications = (deviceToken: string) => {
-    // stub
-    return false
+  unregisterForPushNotifications = async (type: 'web', token: string) => {
+    const parsed: PushSubscriptionJSON = JSON.parse(token)
+    await this.api.notifications_settings_logout(parsed.endpoint, parsed.keys.p256dh, parsed.keys.auth)
   }
 }
