@@ -226,12 +226,15 @@ const getPhoto = (photo: any): MessageAttachment => ({
 export function mapMessageLink(card: any): MessageLink {
   const bv = card.binding_values
   const imgOriginal = bv?.thumbnail_image_large || bv?.thumbnail_image_original || bv?.player_image_original || bv?.event_thumbnail_original
+  const imgWidth = imgOriginal?.image_value?.width
+  const imgHeight = imgOriginal?.image_value?.height
   return {
     url: bv?.card_url?.string_value,
     title: bv?.event_title?.string_value || bv?.title?.string_value,
     summary: bv?.event_subtitle?.string_value || bv?.description?.string_value,
     img: imgOriginal?.image_value?.url,
-    imgSize: { width: imgOriginal?.image_value?.width, height: imgOriginal?.image_value?.height },
+    imgSize: imgWidth && imgHeight ? { width: 
+imgWidth, height: imgHeight } : null,
   }
 }
 
