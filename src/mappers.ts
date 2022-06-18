@@ -234,7 +234,7 @@ export function mapMessageLink(card: any): MessageLink {
     summary: bv?.event_subtitle?.string_value || bv?.description?.string_value,
     img: imgOriginal?.image_value?.url,
     imgSize: imgWidth && imgHeight ? { width: 
-imgWidth, height: imgHeight } : null,
+imgWidth, height: imgHeight } : undefined,
   }
 }
 
