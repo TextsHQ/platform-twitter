@@ -233,8 +233,7 @@ export function mapMessageLink(card: any): MessageLink {
     title: bv?.event_title?.string_value || bv?.title?.string_value,
     summary: bv?.event_subtitle?.string_value || bv?.description?.string_value,
     img: imgOriginal?.image_value?.url,
-    imgSize: imgWidth && imgHeight ? { width: 
-imgWidth, height: imgHeight } : undefined,
+    imgSize: imgWidth && imgHeight ? { width: imgWidth, height: imgHeight } : undefined,
   }
 }
 
@@ -308,15 +307,15 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
       mapped.tweets = [mapTweet(tweet.status)]
     }
     if (animated_gif) {
-      mapped.attachments = mapped.attachments || []
+      mapped.attachments ||= []
       mapped.attachments.push({ ...getVideo(animated_gif), isGif: true })
     }
     if (video) {
-      mapped.attachments = mapped.attachments || []
+      mapped.attachments ||= []
       mapped.attachments.push(getVideo(video))
     }
     if (photo) {
-      mapped.attachments = mapped.attachments || []
+      mapped.attachments ||= []
       mapped.attachments.push(getDynamicPhoto(photo))
     }
     if (fleet) {
