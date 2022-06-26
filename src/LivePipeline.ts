@@ -30,7 +30,7 @@ export default class LivePipeline {
     }
     this.es.onmessage = event => {
       if (!event.data.startsWith('{')) {
-        if (IS_DEV) console.log('unknown data', event.data)
+        if (IS_DEV) console.log('[Twitter.LivePipeline] unknown data', event.data)
         return
       }
       const json = JSON.parse(event.data)
@@ -46,11 +46,10 @@ export default class LivePipeline {
     let errorCount = 0
     this.es.onerror = event => {
       if (this.es.readyState === this.es.CLOSED) {
-        texts.error('[twitter]', new Date(), 'es closed, reconnecting')
-        Sentry.captureMessage(`twitter es reconnecting ${this.es.readyState}`)
+        texts.error('[Twitter.LivePipeline]', new Date(), 'es closed, reconnecting')
         this.setup()
       }
-      texts.error('[twitter]', new Date(), 'es error', event, ++errorCount)
+      texts.error('[Twitter.LivePipeline]', new Date(), 'es error', event, ++errorCount)
     }
   }
 
@@ -77,6 +76,7 @@ export default class LivePipeline {
   }
 
   dispose() {
+    clearTimeout(this.subTimeout)
     this.es?.close()
     this.es = null
   }

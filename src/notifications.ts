@@ -120,9 +120,12 @@ export default class Notifications {
     if (tweetID) return this.api.unfavoriteTweet(tweetID)
   }
 
+  markRead = (cursor: string) =>
+    this.api.notifications_all_last_seen_cursor(cursor)
+
   private pollTimeout: NodeJS.Timeout
 
-  poll = async () => {
+  private poll = async () => {
     clearTimeout(this.pollTimeout)
     if (this.papi.disposed) return
     let nextFetchTimeoutMs = 30_000
@@ -164,7 +167,4 @@ export default class Notifications {
     }
     this.pollTimeout = setTimeout(this.poll, nextFetchTimeoutMs)
   }
-
-  markRead = (cursor: string) =>
-    this.api.notifications_all_last_seen_cursor(cursor)
 }

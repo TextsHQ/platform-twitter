@@ -54,6 +54,8 @@ export default class Twitter implements PlatformAPI {
 
   private pollTimeout: NodeJS.Timeout
 
+  private lastUserUpdatesFetch: number
+
   private pollUserUpdates = async () => {
     clearTimeout(this.pollTimeout)
     if (this.disposed) return
@@ -61,6 +63,7 @@ export default class Twitter implements PlatformAPI {
     if (this.userUpdatesCursor) {
       try {
         const { json, headers } = await this.api.dm_user_updates(this.userUpdatesCursor) || {}
+        this.lastUserUpdatesFetch = Date.now()
         // if (IS_DEV) console.log(JSON.stringify(json, null, 2))
         if (json?.user_events) {
           this.processUserUpdates(json)
@@ -111,6 +114,11 @@ export default class Twitter implements PlatformAPI {
     this.live.dispose()
     this.disposed = true
     clearTimeout(this.pollTimeout)
+  }
+
+  reconnectRealtime = () => {
+    this.live.updateSubscriptions()
+    if ((Date.now() - this.lastUserUpdatesFetch) > 5_000) this.pollUserUpdates()
   }
 
   onThreadSelected = async (threadID: string) => {
