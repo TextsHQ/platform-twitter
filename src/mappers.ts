@@ -26,11 +26,7 @@ import {
 } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
-
-type TwitterUser = {} & any
-type TwitterThreadParticipant = {} & any
-type TwitterThread = {} & any
-type TwitterMessage = {} & any
+import type { TwitterUser, TwitterThreadParticipant, TwitterThread, TwitterMessage } from './twitter-types'
 
 const TWITTER_EPOCH = 1288834974657
 function getTimestampFromSnowflake(snowflake: string) {

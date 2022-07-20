@@ -10,6 +10,7 @@ import TwitterAPI from './network-api'
 import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
 import Notifications from './notifications'
+import type { TwitterUser } from './twitter-types'
 
 const { IS_DEV, Sentry } = texts
 
@@ -18,7 +19,7 @@ export default class Twitter implements PlatformAPI {
 
   private readonly live = new LivePipeline(this.api, this.onLiveEvent.bind(this))
 
-  currentUser: any = null
+  currentUser: TwitterUser = null
 
   userUpdatesCursor: string = null
 
