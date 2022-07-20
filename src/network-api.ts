@@ -539,6 +539,14 @@ export default class TwitterAPI {
       form: {},
     })
 
+  dm_conversation_accept = (threadID: string) =>
+    this.fetch({
+      method: 'POST',
+      url: `${API_ENDPOINT}1.1/dm/conversation/${threadID}/accept.json`,
+      referer: `https://twitter.com/messages/${threadID}`,
+      form: {},
+    })
+
   cards_preview = (linkURL: string) =>
     this.fetch({
       method: 'POST',

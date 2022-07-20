@@ -330,20 +330,25 @@ export default class Twitter implements PlatformAPI {
     if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Notifications cannot be deleted from the notifications thread')
     const json = await this.api.dm_destroy(threadID, messageID)
     this.handleJSONErrors(json)
-    return true
   }
 
   updateThread = async (threadID: string, updates: Partial<Thread>) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) return
     if ('title' in updates) {
-      const result = await this.api.dm_conversation_update_name(threadID, updates.title)
-      return result === undefined
+      const json = await this.api.dm_conversation_update_name(threadID, updates.title)
+      this.handleJSONErrors(json)
     }
     if ('mutedUntil' in updates) {
-      const result = await (updates.mutedUntil === 'forever'
-        ? this.api.dm_conversation_disable_notifications(threadID)
-        : this.api.dm_conversation_enable_notifications(threadID))
-      return result === undefined
+      const json = await (updates.mutedUntil === 'forever'
+        ? this.api.dm_conversation_disable_notifications
+        : this.api.dm_conversation_enable_notifications)(threadID)
+      this.handleJSONErrors(json)
+    }
+    if ('folderName' in updates) {
+      if (updates.folderName === InboxName.NORMAL) {
+        const json = await this.api.dm_conversation_accept(threadID)
+        this.handleJSONErrors(json)
+      }
     }
   }
 
@@ -362,14 +367,12 @@ export default class Twitter implements PlatformAPI {
   addParticipant = async (threadID: string, participantID: string) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Participants cannot be added to the notifications thread')
     await this.api.dm_conversation_add_participants(threadID, [participantID])
-    return true
   }
 
   removeParticipant = async (threadID: string, participantID: string) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Participants cannot be removed from the notifications thread')
     if (participantID !== this.currentUser.id_str) return
     await this.deleteThread(threadID)
-    return true
   }
 
   getLinkPreview = async (linkURL: string) => {
