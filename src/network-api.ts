@@ -559,6 +559,43 @@ export default class TwitterAPI {
       },
     })
 
+  timeline_home = (cursor: string) =>
+    this.fetch({
+      includeHeaders: true,
+      url: 'https://twitter.com/i/api/2/timeline/home.json',
+      searchParams: {
+        include_profile_interstitial_type: '1',
+        include_blocking: '1',
+        include_blocked_by: '1',
+        include_followed_by: '1',
+        include_want_retweets: '1',
+        include_mute_edge: '1',
+        include_can_dm: '1',
+        include_can_media_tag: '1',
+        include_ext_has_nft_avatar: '1',
+        skip_status: '1',
+        cards_platform: 'Web-12',
+        include_cards: '1',
+        include_ext_alt_text: 'true',
+        include_quote_count: 'true',
+        include_reply_count: '1',
+        tweet_mode: 'extended',
+        include_entities: 'true',
+        include_user_entities: 'true',
+        include_ext_media_color: 'true',
+        include_ext_media_availability: 'true',
+        include_ext_sensitive_media_warning: 'true',
+        send_error_codes: 'true',
+        simple_quoted_tweet: 'true',
+        earned: '1',
+        count: '20',
+        cursor,
+        lca: 'true',
+        ext: 'mediaStats,highlightedLabel,voiceInfo,superFollowMetadata',
+      },
+      referer: 'https://twitter.com/home',
+    })
+
   notifications_all = (cursor: string) =>
     this.fetch({
       includeHeaders: true,
@@ -635,31 +672,38 @@ export default class TwitterAPI {
       referer: 'https://twitter.com/notifications',
     })
 
-  createTweet = (text: string, in_reply_to_tweet_id: string) =>
+  createTweet = (text: string, in_reply_to_tweet_id?: string) =>
     this.fetch({
       method: 'POST',
-      url: `${GRAPHQL_ENDPOINT}91Nf2Ip_E9aTPnxvX7rP_A/CreateTweet`,
+      url: `${GRAPHQL_ENDPOINT}hC1nuE-2d1NX5LYBuuAvtQ/CreateTweet`,
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        variables: JSON.stringify({
+        variables: {
           tweet_text: text,
-          reply: {
-            in_reply_to_tweet_id,
-            exclude_reply_user_ids: [],
+          media: {
+            media_entities: [],
+            possibly_sensitive: false,
           },
-          media: { media_entities: [], possibly_sensitive: false },
-          // withReactionsMetadata: true,
-          // withReactionsPerspective: true,
-          withSuperFollowsTweetFields: false,
-          withSuperFollowsUserFields: false,
+          withDownvotePerspective: true,
+          withReactionsMetadata: false,
+          withReactionsPerspective: false,
+          withSuperFollowsTweetFields: true,
+          withSuperFollowsUserFields: true,
           semantic_annotation_ids: [],
           dark_request: false,
-          withUserResults: true,
-          withBirdwatchPivots: false,
-        }),
-        queryId: '91Nf2Ip_E9aTPnxvX7rP_A',
+        },
+        features: {
+          dont_mention_me_view_api_enabled: true,
+          interactive_text_enabled: true,
+          responsive_web_uc_gql_enabled: false,
+          vibe_api_enabled: false,
+          responsive_web_edit_tweet_api_enabled: false,
+          standardized_nudges_misinfo: true,
+          responsive_web_enhance_cards_enabled: false,
+        },
+        queryId: 'hC1nuE-2d1NX5LYBuuAvtQ',
       }),
       referer: 'https://twitter.com/notifications',
     })

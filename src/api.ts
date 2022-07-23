@@ -245,6 +245,22 @@ export default class Twitter implements PlatformAPI {
   }
 
   sendMessage = async (threadID: string, content: MessageContent, msgSendOptions: MessageSendOptions) => {
+    if (threadID === NOTIFICATIONS_THREAD_ID) {
+      if (content.text?.startsWith('/tweet ')) {
+        const json = await this.api.createTweet(content.text.slice('/tweet '.length))
+        this.handleJSONErrors(json)
+        this.onServerEvent([{
+          type: ServerEventType.TOAST,
+          toast: { text: 'Tweeted!' },
+        }])
+        return true
+      }
+      this.onServerEvent([{
+        type: ServerEventType.TOAST,
+        toast: { text: 'Messages should start with /tweet' },
+      }])
+      return false
+    }
     if (content.fileBuffer) {
       return this.sendFileFromBuffer(threadID, content.text, content.fileBuffer, content.mimeType, msgSendOptions)
     }
