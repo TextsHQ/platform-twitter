@@ -1,4 +1,4 @@
-import { texts, Message, Thread, PaginationArg, User, InboxName, ServerEventType } from '@textshq/platform-sdk'
+import { texts, Message, Thread, PaginationArg, User, InboxName, ServerEventType, ServerEvent } from '@textshq/platform-sdk'
 import { findLast } from 'lodash'
 
 import { mapNotification, mapTweetNotification } from './mappers'
@@ -6,6 +6,16 @@ import icons from './icons'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
 import type TwitterAPI from './network-api'
 import type PAPI from './api'
+
+/*
+json.timeline.instructions:
+[
+  { clearCache: {} }, // not present when 0 messages
+  { addEntries: { entries: [Array] } },
+  { clearEntriesUnreadState: {} },
+  { markEntriesUnreadGreaterThanSortIndex: { sortIndex: '1659090728936' } }
+]
+*/
 
 export default class Notifications {
   constructor(
@@ -19,14 +29,15 @@ export default class Notifications {
 
   private pollCursor: string
 
-  parseMessagesInTimeline(json: any, updatePollCursor = !this.pollCursor) {
+  private parseMessagesInTimeline(json: any, updatePollCursor = !this.pollCursor): { messages: Message[], events: ServerEvent[] } {
     const cursors: { Top: string, Bottom: string } = { Top: null, Bottom: null }
     const messages: Message[] = []
-    json.timeline.instructions?.forEach(instruction => {
+    const events: ServerEvent[] = [];
+    (json.timeline.instructions as any[])?.forEach(instruction => {
       const [name, value] = Object.entries<any>(instruction)[0]
       switch (name) {
         case 'addEntries':
-          (value.entries as any)?.forEach(entry => {
+          (value.entries as any[])?.forEach(entry => {
             const id = entry.entryId
             if (entry.content.operation) {
               const { cursorType, value } = entry.content.operation.cursor
@@ -65,12 +76,12 @@ export default class Notifications {
 
         case 'clearCache':
           this.messageTweetMap.clear()
-          this.papi.onServerEvent([{
+          events.push({
             type: ServerEventType.STATE_SYNC,
             mutationType: 'delete-all',
             objectName: 'message',
             objectIDs: { threadID: NOTIFICATIONS_THREAD_ID },
-          }])
+          })
           break
 
         case 'clearEntriesUnreadState':
@@ -83,13 +94,14 @@ export default class Notifications {
       messages[0].cursor = cursors.Bottom
       messages[messages.length - 1].cursor = cursors.Top
     }
-    return messages
+    return { messages, events }
   }
 
   async getMessages(pagination: PaginationArg) {
     const { json } = await this.api.notifications_all(pagination?.cursor)
     if (!json.globalObjects) return { items: [], hasMore: false }
-    const messages = this.parseMessagesInTimeline(json)
+    const { messages, events } = this.parseMessagesInTimeline(json)
+    this.papi.onServerEvent(events)
     return { items: messages, hasMore: true }
   }
 
@@ -141,17 +153,18 @@ export default class Notifications {
         const { json, headers } = await this.api.notifications_all(this.pollCursor) || {}
         // texts.log(JSON.stringify(json, null, 2))
         if (json) {
-          const messages = this.parseMessagesInTimeline(json, true)
+          const { messages, events } = this.parseMessagesInTimeline(json, true)
           texts.log('[twitter poll notifs]', messages.length, 'new messages')
           if (messages.length > 0) {
-            this.papi.onServerEvent([{
+            events.push({
               type: ServerEventType.STATE_SYNC,
               mutationType: 'upsert',
               objectName: 'message',
               objectIDs: { threadID: NOTIFICATIONS_THREAD_ID },
               entries: messages,
-            }])
+            })
           }
+          if (events.length > 0) this.papi.onServerEvent(events)
         } else if (json?.errors[0]?.code === 88) { // RateLimitExceeded
           const rateLimitReset = headers['x-rate-limit-reset']
           const resetMs = (+rateLimitReset * 1000) - Date.now()
