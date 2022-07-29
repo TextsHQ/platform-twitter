@@ -65,7 +65,7 @@ export default class Twitter implements PlatformAPI {
       try {
         const { json, headers } = await this.api.dm_user_updates(this.userUpdatesCursor) || {}
         this.lastUserUpdatesFetch = Date.now()
-        // if (IS_DEV) console.log(JSON.stringify(json, null, 2))
+        // texts.log(JSON.stringify(json, null, 2))
         if (json?.user_events) {
           this.processUserUpdates(json)
         } else if (json?.errors?.[0]?.code === 88) { // RateLimitExceeded
@@ -240,7 +240,7 @@ export default class Twitter implements PlatformAPI {
     if (errors) {
       throw new Error((errors as any[]).map(err => err.message).join(', '))
     }
-    const threadID = entries.find(e => e.conversation_create)?.conversation_create?.conversation_id
+    const threadID = (entries as any[]).find(e => e.conversation_create)?.conversation_create?.conversation_id
     return this.getThread(threadID)
   }
 

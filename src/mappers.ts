@@ -23,6 +23,7 @@ import {
   Tweet,
   MessageBehavior,
   User,
+  PartialWithID,
 } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
@@ -561,13 +562,66 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
       }))
 
     case MessageType.MESSAGE:
-    case MessageType.PARTICIPANTS_JOIN:
-    case MessageType.PARTICIPANTS_LEAVE:
     case MessageType.JOIN_CONVERSATION:
-    case MessageType.CONVERSATION_AVATAR_UPDATE:
-    case MessageType.CONVERSATION_NAME_UPDATE:
     case MessageType.WELCOME_MESSAGE:
       return getMessageCreated()
+
+    case MessageType.PARTICIPANTS_JOIN:
+      return [
+        {
+          type: ServerEventType.STATE_SYNC,
+          mutationType: 'upsert',
+          objectName: 'participant',
+          objectIDs: { threadID: entry.conversation_id },
+          entries: (entry.participants as any[]).map<Participant>(p => mapParticipant(json.user_events.users[p.user_id], p)),
+        },
+        getMessageCreated(),
+      ]
+
+    case MessageType.PARTICIPANTS_LEAVE:
+      return [
+        {
+          type: ServerEventType.STATE_SYNC,
+          mutationType: 'update',
+          objectName: 'participant',
+          objectIDs: { threadID: entry.conversation_id },
+          entries: (entry.participants as any[]).map<PartialWithID<Participant>>(p => ({
+            id: p.user_id,
+            hasExited: true,
+          })),
+        },
+        getMessageCreated(),
+      ]
+
+    case MessageType.CONVERSATION_NAME_UPDATE:
+      return [
+        {
+          type: ServerEventType.STATE_SYNC,
+          mutationType: 'update',
+          objectName: 'thread',
+          objectIDs: {},
+          entries: [{
+            id: entry.conversation_id,
+            title: entry.conversation_name,
+          }],
+        },
+        getMessageCreated(),
+      ]
+
+    case MessageType.CONVERSATION_AVATAR_UPDATE:
+      return [
+        {
+          type: ServerEventType.STATE_SYNC,
+          mutationType: 'update',
+          objectName: 'thread',
+          objectIDs: {},
+          entries: [{
+            id: entry.conversation_id,
+            imgURL: entry.conversation_avatar_image_https,
+          }],
+        },
+        getMessageCreated(),
+      ]
 
     case MessageType.TRUST_CONVERSATION:
       return [
