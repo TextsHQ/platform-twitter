@@ -64,11 +64,18 @@ export default class Notifications {
         }
 
         case 'clearCache':
-        case 'clearEntriesUnreadState':
+          this.messageTweetMap.clear()
+          this.papi.onServerEvent([{
+            type: ServerEventType.STATE_SYNC,
+            mutationType: 'delete-all',
+            objectName: 'message',
+            objectIDs: { threadID: NOTIFICATIONS_THREAD_ID },
+          }])
           break
 
+        case 'clearEntriesUnreadState':
         default:
-          texts.log('getNotificationMessages: unrecognized', name, value)
+          texts.log('[twitter notifs] getNotificationMessages: unhandled', name, value)
       }
     })
     messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
@@ -135,7 +142,7 @@ export default class Notifications {
         // texts.log(JSON.stringify(json, null, 2))
         if (json) {
           const messages = this.parseMessagesInTimeline(json, true)
-          texts.log('[twitter poll notifications]', messages.length, 'new messages')
+          texts.log('[twitter poll notifs]', messages.length, 'new messages')
           if (messages.length > 0) {
             this.papi.onServerEvent([{
               type: ServerEventType.STATE_SYNC,
@@ -149,9 +156,9 @@ export default class Notifications {
           const rateLimitReset = headers['x-rate-limit-reset']
           const resetMs = (+rateLimitReset * 1000) - Date.now()
           nextFetchTimeoutMs = resetMs
-          console.log('[twitter poll notifications] rate limit exceeded, next fetch:', resetMs)
+          console.log('[twitter poll notifs] rate limit exceeded, next fetch:', resetMs)
         } else {
-          console.log('[twitter poll notifications] json is falsey')
+          console.log('[twitter poll notifs] json is falsey')
           nextFetchTimeoutMs = 60_000
         }
       } catch (err) {
@@ -163,7 +170,7 @@ export default class Notifications {
         }
       }
     } else {
-      texts.log('[twitter poll notifications] skipping polling bc !this.userUpdatesCursor')
+      texts.log('[twitter poll notifs] skipping polling bc !this.userUpdatesCursor')
     }
     this.pollTimeout = setTimeout(this.poll, nextFetchTimeoutMs)
   }
