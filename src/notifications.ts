@@ -101,7 +101,7 @@ export default class Notifications {
     const { json } = await this.api.notifications_all(pagination?.cursor)
     if (!json.globalObjects) return { items: [], hasMore: false }
     const { messages, events } = this.parseMessagesInTimeline(json)
-    this.papi.onServerEvent(events)
+    if (events.length > 0) this.papi.onServerEvent(events)
     return { items: messages, hasMore: true }
   }
 
