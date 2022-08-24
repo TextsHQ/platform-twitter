@@ -421,11 +421,13 @@ export default class Twitter implements PlatformAPI {
   }
 
   registerForPushNotifications = async (type: 'web', token: string) => {
+    if (type !== 'web') throw Error('invalid type')
     const parsed: PushSubscriptionJSON = JSON.parse(token)
     await this.api.notifications_settings_login(parsed.endpoint, parsed.keys.p256dh, parsed.keys.auth)
   }
 
   unregisterForPushNotifications = async (type: 'web', token: string) => {
+    if (type !== 'web') throw Error('invalid type')
     const parsed: PushSubscriptionJSON = JSON.parse(token)
     await this.api.notifications_settings_logout(parsed.endpoint, parsed.keys.p256dh, parsed.keys.auth)
   }
