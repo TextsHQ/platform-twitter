@@ -393,7 +393,7 @@ export default class Twitter implements PlatformAPI {
 
   getLinkPreview = async (linkURL: string) => {
     const res = await this.api.cards_preview(linkURL)
-    return mapMessageLink(res.card)
+    if (res.result === 'CARD_FOUND') return mapMessageLink(res.card)
   }
 
   reportThread = async (type: 'spam', threadID: string, firstMessageID: string) => {
