@@ -41,6 +41,8 @@ const info: PlatformInfo = {
     Attribute.SUPPORTS_REPORT_THREAD,
     Attribute.SUBSCRIBE_TO_ONLINE_OFFLINE_ACTIVITY,
     Attribute.SUPPORTS_PUSH_NOTIFICATIONS,
+    Attribute.CAN_FETCH_LINK_PREVIEW,
+    Attribute.CAN_REMOVE_LINK_PREVIEW,
   ]),
   attachments: {
     gifMimeType: 'image/gif',

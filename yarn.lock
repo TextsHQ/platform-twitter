@@ -223,10 +223,11 @@ __metadata:
 
 "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk#main":
   version: 0.4.4
-  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=e92f768bc23c32f85ef50f811cf2edff7a147f31"
+  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=3b77cd9f1837d68bf7bb59e3791c830044d63c7c"
   dependencies:
-    form-data: ^4.0.0
-  checksum: 32838d6b1870c5397b72d7a364852e183a50f40cc5ebb1af4257cede93bf3d981c7ccbe9979232e4de0e553296c4fcbc5a2300dcbbbcf4425d80153b87918a14
+    emoji-regex: ^10.1.0
+    qrcode.react: ^3.1.0
+  checksum: 4dcd05796475bec2696f085a087a5f9fd0df523d080542c65c5eb5ce7055cf3f77846cfd65ee610ebda4e09e7ea91cfa8b447a9d24172176a3df3b4e18b221ea
   languageName: node
   linkType: hard
 
@@ -868,6 +869,13 @@ __metadata:
   dependencies:
     esutils: ^2.0.2
   checksum: fd7673ca77fe26cd5cba38d816bc72d641f500f1f9b25b83e8ce28827fe2da7ad583a8da26ab6af85f834138cf8dae9f69b0cd6ab925f52ddab1754db44d99ce
+  languageName: node
+  linkType: hard
+
+"emoji-regex@npm:^10.1.0":
+  version: 10.1.0
+  resolution: "emoji-regex@npm:10.1.0"
+  checksum: 5bc780fc4d75f89369155a87c55f7e83a0bf72bcccda7df7f2c570cde4738d8b17d112d12afdadfec16647d1faef6501307b4304f81d35c823a938fe6547df0f
   languageName: node
   linkType: hard
 
@@ -2316,6 +2324,15 @@ __metadata:
   version: 2.1.1
   resolution: "punycode@npm:2.1.1"
   checksum: 823bf443c6dd14f669984dea25757b37993f67e8d94698996064035edd43bed8a5a17a9f12e439c2b35df1078c6bec05a6c86e336209eb1061e8025c481168e8
+  languageName: node
+  linkType: hard
+
+"qrcode.react@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "qrcode.react@npm:3.1.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0
+  checksum: 94a2942ecf83f461d869adb20305ae663c6d1abe93ef2c72442b07d756ce70cf6deb6fd588dc5b382b48c6991cfde1dfd5ac9b814c1461e71d5edb2d945e67fc
   languageName: node
   linkType: hard
 
