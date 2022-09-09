@@ -12,7 +12,7 @@ export const supportedReactions: Record<string, SupportedReaction> = {
   mask: { title: 'Mask', render: '😷', disabled: true },
 }
 
-export enum MessageType {
+export const enum MessageType {
   CONVERSATION_AVATAR_UPDATE = 'conversation_avatar_update',
   CONVERSATION_NAME_UPDATE = 'conversation_name_update',
   CONVERSATION_PROFILE_INFO_HEADER = 'conversation_profile_info_header',
