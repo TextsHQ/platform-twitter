@@ -10,9 +10,6 @@
     "build": "yarn tsc",
     "lint": "yarn eslint src --ext ts,tsx,js,jsx --cache"
   },
-  "husky": {
-    "hooks": {}
-  },
   "dependencies": {
     "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#main",
     "eventsource": "^1.0.7",
@@ -23,16 +20,15 @@
     "tough-cookie": "^4.0.0"
   },
   "devDependencies": {
-    "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config",
+    "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config#main",
     "@types/eslint": "^7.2.10",
     "@types/eventsource": "^1.1.5",
     "@types/he": "^1.1.1",
     "@types/lodash": "^4.14.168",
     "@types/node": "^16.11.7",
     "@types/tough-cookie": "^4.0.0",
-    "eslint": "^7.13.0",
-    "husky": "^4.3.0",
-    "typescript": "^4.6.4"
+    "eslint": "^8.23.1",
+    "typescript": "^4.8.3"
   },
-  "packageManager": "yarn@3.2.1"
+  "packageManager": "yarn@3.2.3"
 }
