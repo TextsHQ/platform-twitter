@@ -29,7 +29,7 @@ const staticFetchHeaders = {
   'x-twitter-active-user': 'yes',
   'x-twitter-auth-type': 'OAuth2Session',
   'x-twitter-client-language': 'en',
-  'sec-ch-ua': '"Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"',
+  'sec-ch-ua': '"Chromium";v="105", "Google Chrome";v="105", "Not;A=Brand";v="99"',
   'sec-ch-ua-mobile': '?0',
 }
 
