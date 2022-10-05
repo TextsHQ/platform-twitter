@@ -59,7 +59,7 @@ const commonDMParams = {
   supports_reactions: 'true',
 }
 
-enum MEDIA_CATEGORY {
+const enum MEDIA_CATEGORY {
   DM_IMAGE = 'dm_image',
   DM_VIDEO = 'dm_video',
   DM_GIF = 'dm_gif',
@@ -86,7 +86,7 @@ const IGNORED_ERRORS = [130, 392]
 function handleErrors(url: string, statusCode: number, json: any) {
   // { errors: [ { code: 32, message: 'Could not authenticate you.' } ] }
   const errors = json.errors as { code: number, message: string }[]
-  const loggedOutError = errors.find(e => e.code === 32)
+  const loggedOutError = errors.find(e => e.code === 32 || e.code === 126)
   if (loggedOutError) {
     throw new ReAuthError(loggedOutError!.message)
     // todo track reauth event
@@ -109,7 +109,7 @@ function getMediaCategory(mimeType: string) {
 }
 
 export default class TwitterAPI {
-  private csrfToken: string = ''
+  private csrfToken = ''
 
   cookieJar: CookieJar = null
 

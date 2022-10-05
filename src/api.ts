@@ -43,7 +43,7 @@ export default class Twitter implements PlatformAPI {
     const cookieJar = CookieJar.fromJSON(cookieJarJSON)
     await this.api.setLoginState(cookieJar)
     await this.afterAuth()
-    if (!this.currentUser?.id_str) throw new ReAuthError() // todo improve
+    if (!this.currentUser?.id_str) throw new Error('current user id not present')
   }
 
   private processUserUpdates = (json: any) => {
@@ -144,7 +144,7 @@ export default class Twitter implements PlatformAPI {
 
   serializeSession = () => this.api.cookieJar.toJSON()
 
-  afterAuth = async () => {
+  private afterAuth = async () => {
     const response = await this.api.account_verify_credentials()
     this.currentUser = response
     if (this.sendNotificationsThread) {
