@@ -369,7 +369,7 @@ export default class Twitter implements PlatformAPI {
   }
 
   deleteThread = async (threadID: string) => {
-    if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Notifications thread cannot be deleted')
+    if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('To remove the notifications thread: click Prefs → your Twitter account → Show Twitter notifications as a thread')
     await this.api.dm_conversation_delete(threadID)
   }
 
