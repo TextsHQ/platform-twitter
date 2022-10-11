@@ -6,13 +6,13 @@ import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Pagina
 import { pick } from 'lodash'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, mapUser, REACTION_MAP_TO_TWITTER, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
-import TwitterAPI from './network-api'
+import TwitterAPI, { handleJSONErrors } from './network-api'
 import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
 import Notifications from './notifications'
 import type { TwitterUser } from './twitter-types'
 
-const { IS_DEV, Sentry } = texts
+const { Sentry } = texts
 
 export default class Twitter implements PlatformAPI {
   private readonly api = new TwitterAPI()
@@ -135,9 +135,7 @@ export default class Twitter implements PlatformAPI {
     await this.api.setLoginState(CookieJar.fromJSON(cookieJarJSON as any))
     await this.afterAuth()
     if (this.currentUser?.id_str) return { type: 'success' }
-    // { errors: [ { code: 32, message: 'Could not authenticate you.' } ] }
-    const errorMessages = this.currentUser?.errors?.map(e => e.message)?.join('\n')
-    return { type: 'error', errorMessage: errorMessages }
+    handleJSONErrors(this.currentUser)
   }
 
   logout = () => this.api.account_logout()
@@ -236,10 +234,9 @@ export default class Twitter implements PlatformAPI {
       const threadID = `${this.currentUser.id_str}-${userID}`
       return this.getThread(threadID)
     }
-    const { entries, errors } = await this.api.dm_new({ text: messageText, recipientIDs: userIDs.join(',') })
-    if (errors) {
-      throw new Error((errors as any[]).map(err => err.message).join(', '))
-    }
+    const json = await this.api.dm_new({ text: messageText, recipientIDs: userIDs.join(',') })
+    handleJSONErrors(json)
+    const { entries } = json
     const threadID = (entries as any[]).find(e => e.conversation_create)?.conversation_create?.conversation_id
     return this.getThread(threadID)
   }
@@ -248,7 +245,7 @@ export default class Twitter implements PlatformAPI {
     if (threadID === NOTIFICATIONS_THREAD_ID) {
       if (content.text?.startsWith('/tweet ')) {
         const json = await this.api.createTweet(content.text.slice('/tweet '.length))
-        this.handleJSONErrors(json)
+        handleJSONErrors(json)
         this.onServerEvent([{
           type: ServerEventType.TOAST,
           toast: { text: 'Tweeted!' },
@@ -272,25 +269,18 @@ export default class Twitter implements PlatformAPI {
   }
 
   private sendTextMessage = async (threadID: string, text: string, { pendingMessageID }: MessageSendOptions) => {
-    const { entries, errors } = await this.api.dm_new({ text, threadID, generatedMsgID: pendingMessageID })
-    if (IS_DEV) console.log(entries, errors)
-    // [ { message: 'Over capacity', code: 130 } ]
-    if (errors) {
-      throw new Error((errors as any[]).map(err => err.message).join(', '))
-    }
-    const mapped = (entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
+    const json = await this.api.dm_new({ text, threadID, generatedMsgID: pendingMessageID })
+    handleJSONErrors(json)
+    const mapped = (json.entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
     return mapped
   }
 
   private sendFileFromBuffer = async (threadID: string, text: string, fileBuffer: Buffer, mimeType: string, { pendingMessageID }: MessageSendOptions) => {
     const mediaID = await this.api.upload(threadID, fileBuffer, mimeType)
     if (!mediaID) return
-    const { entries, errors } = await this.api.dm_new({ text: text || '', threadID, recipientIDs: undefined, generatedMsgID: pendingMessageID, mediaID })
-    if (IS_DEV) console.log(entries, errors)
-    if (errors) {
-      throw new Error((errors as any[]).map(err => err.message).join(', '))
-    }
-    const mapped = (entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
+    const json = await this.api.dm_new({ text: text || '', threadID, recipientIDs: undefined, generatedMsgID: pendingMessageID, mediaID })
+    handleJSONErrors(json)
+    const mapped = (json.entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
     return mapped
   }
 
@@ -313,19 +303,15 @@ export default class Twitter implements PlatformAPI {
     }
   }
 
-  private readonly handleJSONErrors = (json: any) => {
-    if (json?.errors) throw Error(json.errors.map(e => `${e.code}: ${e.message}`).join(', '))
-  }
-
   addReaction = (threadID: string, messageID: string, reactionKey: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
       ? this.notifications.addReaction(messageID, reactionKey)
-      : this.api.dm_reaction_new(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)).then(this.handleJSONErrors)
+      : this.api.dm_reaction_new(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)).then(handleJSONErrors)
 
   removeReaction = (threadID: string, messageID: string, reactionKey: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
       ? this.notifications.removeReaction(messageID, reactionKey)
-      : this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)).then(this.handleJSONErrors)
+      : this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)).then(handleJSONErrors)
 
   sendReadReceipt = (threadID: string, messageID: string, messageCursor: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
@@ -345,25 +331,25 @@ export default class Twitter implements PlatformAPI {
   deleteMessage = async (threadID: string, messageID: string) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Notifications cannot be deleted from the notifications thread')
     const json = await this.api.dm_destroy(threadID, messageID)
-    this.handleJSONErrors(json)
+    handleJSONErrors(json)
   }
 
   updateThread = async (threadID: string, updates: Partial<Thread>) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) return
     if ('title' in updates) {
       const json = await this.api.dm_conversation_update_name(threadID, updates.title)
-      this.handleJSONErrors(json)
+      handleJSONErrors(json)
     }
     if ('mutedUntil' in updates) {
       const json = await (updates.mutedUntil === 'forever'
         ? this.api.dm_conversation_disable_notifications
         : this.api.dm_conversation_enable_notifications)(threadID)
-      this.handleJSONErrors(json)
+      handleJSONErrors(json)
     }
     if ('folderName' in updates) {
       if (updates.folderName === InboxName.NORMAL) {
         const json = await this.api.dm_conversation_accept(threadID)
-        this.handleJSONErrors(json)
+        handleJSONErrors(json)
       }
     }
   }

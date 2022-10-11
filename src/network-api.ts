@@ -102,6 +102,13 @@ function handleErrors(url: string, statusCode: number, json: any) {
   }
 }
 
+export function handleJSONErrors(json: any) {
+  if (json?.errors) {
+    Sentry.captureMessage('twitter.handleJSONErrors') // this function might be redundant since handleErrors takes care of this
+    throw Error(json.errors.map(e => `${e.code}: ${e.message}`).join(', '))
+  }
+}
+
 function getMediaCategory(mimeType: string) {
   if (mimeType === 'image/gif') return MEDIA_CATEGORY.DM_GIF
   if (mimeType.startsWith('image')) return MEDIA_CATEGORY.DM_IMAGE
