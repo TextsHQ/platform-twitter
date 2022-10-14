@@ -626,8 +626,14 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
     case MessageType.TRUST_CONVERSATION:
       return [
         {
-          type: ServerEventType.THREAD_TRUSTED,
-          threadID,
+          type: ServerEventType.STATE_SYNC,
+          mutationType: 'update',
+          objectName: 'thread',
+          objectIDs: {},
+          entries: [{
+            id: threadID,
+            folderName: InboxName.NORMAL,
+          }],
         },
         getMessageCreated(),
       ]

@@ -1670,13 +1670,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk#371330e6b91adffa4540728701433ed5030267a4":
+"@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk#4f38986fdee2db0ffef6f319954939760c3831ac":
   version: 0.4.4
-  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=371330e6b91adffa4540728701433ed5030267a4"
+  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=4f38986fdee2db0ffef6f319954939760c3831ac"
   dependencies:
     emoji-regex: ^10.1.0
     qrcode.react: ^3.1.0
-  checksum: fa32c997b2c279efd030b0594e74f76baa65e22d0e3567a582b2cf19b1328ffac6961b653677edcf205833a216df1cd7b8568cc5b8eadbeba0ed6aec08c31e62
+  checksum: 8c8357deee023b1ad79db69ce50f2875cfa076dce4a6144338873094e6bc1527e430c2b0c3e8bee831565f7f47c8d31711f1287c93634b87245d510b34c5b1b8
   languageName: node
   linkType: hard
 
@@ -1685,7 +1685,7 @@ __metadata:
   resolution: "@textshq/platform-twitter@workspace:."
   dependencies:
     "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config#main"
-    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#371330e6b91adffa4540728701433ed5030267a4"
+    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#4f38986fdee2db0ffef6f319954939760c3831ac"
     "@types/eslint": ^8.4.6
     "@types/eventsource": ^1.1.5
     "@types/he": ^1.1.1
