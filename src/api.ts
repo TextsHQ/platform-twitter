@@ -248,7 +248,10 @@ export default class Twitter implements PlatformAPI {
         handleJSONErrors(json)
         this.onServerEvent([{
           type: ServerEventType.TOAST,
-          toast: { text: 'Tweeted!' },
+          toast: {
+            text: 'Tweeted!',
+            buttons: [{ label: 'View tweet', linkURL: `https://twitter.com/${this.currentUser.screen_name}/status/${json.data.create_tweet.tweet_results.result.rest_id}` }],
+          },
         }])
         return true
       }
