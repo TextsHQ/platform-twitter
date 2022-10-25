@@ -8,7 +8,7 @@ import {
   MessageReaction,
   MessageSeen,
   ServerEvent,
-  MessageAttachment,
+  Attachment,
   CurrentUser,
   AttachmentType,
   MessageActionType,
@@ -200,20 +200,20 @@ function getSeen(threadParticipants: TwitterUser[] = [], msg: TwitterMessage): M
   return result
 }
 
-const getVideo = (video: any): MessageAttachment => ({
+const getVideo = (video: any): Attachment => ({
   id: video.id_str,
   type: video.audio_only ? AttachmentType.AUDIO : AttachmentType.VIDEO,
   srcURL: maxBy((video.video_info.variants as any[]).filter(v => v.content_type === 'video/mp4'), 'bitrate')?.url,
   size: pick(video.original_info, ['width', 'height']),
 })
-const getDynamicPhoto = (photo: any): MessageAttachment => ({
+const getDynamicPhoto = (photo: any): Attachment => ({
   id: photo.id_str,
   type: AttachmentType.IMG,
   srcURL: `asset://$accountID/media/${Buffer.from(photo.media_url_https).toString('hex')}`,
   fileName: path.basename(photo.media_url_https),
   size: pick(photo.original_info, ['width', 'height']),
 })
-const getPhoto = (photo: any): MessageAttachment => ({
+const getPhoto = (photo: any): Attachment => ({
   id: photo.id_str,
   type: AttachmentType.IMG,
   srcURL: photo.media_url_https,
