@@ -120,11 +120,8 @@ export function mapParticipant(user: TwitterUser, participant: TwitterThreadPart
 
 export function mapCurrentUser(user: TwitterUser): CurrentUser {
   return {
-    id: user.id_str,
-    fullName: user.name,
+    ...mapUser(user),
     displayText: '@' + user.screen_name,
-    imgURL: user.profile_image_url_https.replace('_normal', ''),
-    isVerified: user.verified,
   }
 }
 
