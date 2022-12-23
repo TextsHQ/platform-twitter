@@ -11,7 +11,7 @@
     "lint": "yarn eslint src --ext ts,tsx,js,jsx --cache"
   },
   "dependencies": {
-    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#d06b8c049fc1546b5f42b16e10d0ef5482c0a0d5",
+    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#ebb8a7d00f5b4528d1573aa8d930b6e8588dde60",
     "eventsource": "^1.0.7",
     "form-data": "^4.0.0",
     "he": "^1.2.0",

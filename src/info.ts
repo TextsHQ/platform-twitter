@@ -17,7 +17,7 @@ const info: PlatformInfo = {
   },
   deletionMode: MessageDeletionMode.DELETE_FOR_SELF,
   browserLogin: {
-    loginURL: 'https://twitter.com/login',
+    url: 'https://twitter.com/login',
     authCookieName: 'auth_token',
     runJSOnNavigate: `
       // hide close button on login page on mobile
