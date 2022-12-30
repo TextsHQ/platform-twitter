@@ -11,7 +11,7 @@
     "lint": "yarn eslint src --ext ts,tsx,js,jsx --cache"
   },
   "dependencies": {
-    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#ebb8a7d00f5b4528d1573aa8d930b6e8588dde60",
+    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#a42fae668979080be60dd8fad5a43c0c810734b1",
     "eventsource": "^1.0.7",
     "form-data": "^4.0.0",
     "he": "^1.2.0",
@@ -21,14 +21,14 @@
   },
   "devDependencies": {
     "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config#main",
-    "@types/eslint": "^8.4.6",
+    "@types/eslint": "^8.4.10",
     "@types/eventsource": "^1.1.5",
     "@types/he": "^1.1.1",
     "@types/lodash": "^4.14.168",
     "@types/node": "^16.11.7",
     "@types/tough-cookie": "^4.0.0",
-    "eslint": "^8.24.0",
-    "typescript": "^4.8.4"
+    "eslint": "^8.30.0",
+    "typescript": "^4.9.4"
   },
-  "packageManager": "yarn@3.2.4"
+  "packageManager": "yarn@3.3.1"
 }
