@@ -241,23 +241,28 @@ export default class Twitter implements PlatformAPI {
     return this.getThread(threadID)
   }
 
+  private tweet = async (text: string, inReplyToTweetID: string) => {
+    const json = await this.api.createTweet(text, inReplyToTweetID)
+    handleJSONErrors(json)
+    this.onServerEvent([{
+      type: ServerEventType.TOAST,
+      toast: {
+        text: 'Tweeted!',
+        buttons: [{ label: 'View tweet', linkURL: `https://twitter.com/${this.currentUser.screen_name}/status/${json.data.create_tweet.tweet_results.result.rest_id}` }],
+      },
+    }])
+    return true
+  }
+
   sendMessage = async (threadID: string, content: MessageContent, msgSendOptions: MessageSendOptions) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) {
       if (content.text?.startsWith('/tweet ')) {
-        const json = await this.api.createTweet(content.text.slice('/tweet '.length))
-        handleJSONErrors(json)
-        this.onServerEvent([{
-          type: ServerEventType.TOAST,
-          toast: {
-            text: 'Tweeted!',
-            buttons: [{ label: 'View tweet', linkURL: `https://twitter.com/${this.currentUser.screen_name}/status/${json.data.create_tweet.tweet_results.result.rest_id}` }],
-          },
-        }])
-        return true
+        const inReplyToTweetID = msgSendOptions?.quotedMessageID ? this.notifications.messageTweetMap.get(msgSendOptions.quotedMessageID) : undefined
+        return this.tweet(content.text.slice('/tweet '.length), inReplyToTweetID)
       }
       this.onServerEvent([{
         type: ServerEventType.TOAST,
-        toast: { text: 'Messages should start with /tweet' },
+        toast: { text: 'To tweet, start the message with "/tweet "' },
       }])
       return false
     }

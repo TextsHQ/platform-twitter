@@ -25,7 +25,7 @@ export default class Notifications {
     this.poll()
   }
 
-  private messageTweetMap = new Map<string, string>()
+  readonly messageTweetMap = new Map<string, string>()
 
   private pollCursor: string
 
