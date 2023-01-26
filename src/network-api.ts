@@ -81,7 +81,7 @@ const CT0_MAX_AGE = 6 * 60 * 60
 // [ { code: 130, message: 'Over capacity' } ]
 // [ { code: 392, message: 'Session not found.' } ]
 // [ { code: 88, message: 'Rate limit exceeded.' } ]
-const IGNORED_ERRORS = [130, 392]
+const SENTRY_IGNORED_ERRORS = [130, 392]
 
 function handleErrors(url: string, statusCode: number, json: any) {
   // { errors: [ { code: 32, message: 'Could not authenticate you.' } ] }
@@ -92,7 +92,7 @@ function handleErrors(url: string, statusCode: number, json: any) {
     // todo track reauth event
   }
   texts.log(url, statusCode, json.errors)
-  const filteredErrors = errors.filter(err => !IGNORED_ERRORS.includes(err.code))
+  const filteredErrors = errors.filter(err => !SENTRY_IGNORED_ERRORS.includes(err.code))
   if (filteredErrors.length > 0) {
     Sentry.captureException(Error(url), {
       extra: {

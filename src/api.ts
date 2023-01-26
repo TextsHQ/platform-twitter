@@ -270,30 +270,22 @@ export default class Twitter implements PlatformAPI {
       }])
       return false
     }
-    if (content.fileBuffer) {
-      return this.sendFileFromBuffer(threadID, content.text, content.fileBuffer, content.mimeType, msgSendOptions)
-    }
-    if (content.filePath) {
-      const buffer = await fs.readFile(content.filePath)
-      return this.sendFileFromBuffer(threadID, content.text, buffer, content.mimeType, msgSendOptions)
-    }
-    return this.sendTextMessage(threadID, content.text, msgSendOptions)
-  }
-
-  private sendTextMessage = async (threadID: string, text: string, { pendingMessageID }: MessageSendOptions) => {
-    const json = await this.api.dm_new({ text, threadID, generatedMsgID: pendingMessageID })
+    const fileBuffer = content.filePath ? await fs.readFile(content.filePath) : content.fileBuffer
+    const json = await (fileBuffer
+      ? this.sendFileFromBuffer(threadID, content.text, fileBuffer, content.mimeType, msgSendOptions)
+      : this.sendTextMessage(threadID, content.text, msgSendOptions))
     handleJSONErrors(json)
     const mapped = (json.entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
     return mapped
   }
+
+  private sendTextMessage = (threadID: string, text: string, { pendingMessageID }: MessageSendOptions) =>
+    this.api.dm_new({ text, threadID, generatedMsgID: pendingMessageID })
 
   private sendFileFromBuffer = async (threadID: string, text: string, fileBuffer: Buffer, mimeType: string, { pendingMessageID }: MessageSendOptions) => {
     const mediaID = await this.api.upload(threadID, fileBuffer, mimeType)
-    if (!mediaID) return
-    const json = await this.api.dm_new({ text: text || '', threadID, recipientIDs: undefined, generatedMsgID: pendingMessageID, mediaID })
-    handleJSONErrors(json)
-    const mapped = (json.entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
-    return mapped
+    if (!mediaID) throw Error('invalid mediaID')
+    return this.api.dm_new({ text: text || '', threadID, generatedMsgID: pendingMessageID, mediaID })
   }
 
   sendActivityIndicator = async (type: ActivityType, threadID: string) => {
