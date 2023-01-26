@@ -6,6 +6,7 @@ import { setTimeout as setTimeoutAsync } from 'timers/promises'
 import util from 'util'
 import { texts, ReAuthError, FetchOptions } from '@textshq/platform-sdk'
 
+import { TwitterError } from './errors'
 import { chunkBuffer } from './util'
 
 const { constants, IS_DEV, Sentry } = texts
@@ -14,6 +15,8 @@ const { USER_AGENT } = constants
 const randomBytes = util.promisify(crypto.randomBytes)
 
 const AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
+
+const MAX_RETRY_COUNT = 4
 
 const commonHeaders = {
   'Accept-Language': 'en',
@@ -81,7 +84,7 @@ const CT0_MAX_AGE = 6 * 60 * 60
 // [ { code: 130, message: 'Over capacity' } ]
 // [ { code: 392, message: 'Session not found.' } ]
 // [ { code: 88, message: 'Rate limit exceeded.' } ]
-const SENTRY_IGNORED_ERRORS = [130, 392]
+const SENTRY_IGNORED_ERRORS = [TwitterError.OverCapacity, TwitterError.SessionNotFound, TwitterError.RateLimitExceeded]
 
 function handleErrors(url: string, statusCode: number, json: any) {
   // { errors: [ { code: 32, message: 'Could not authenticate you.' } ] }
@@ -144,7 +147,7 @@ export default class TwitterAPI {
     referer?: string
     url: string
     includeHeaders?: boolean
-  }) => {
+  }, retryNumber = 0) => {
     if (!this.cookieJar) throw new Error('Twitter cookie jar not found')
     // if (IS_DEV) console.log('[TW] CALLING', options.url)
     await this.setCSRFTokenCookie()
@@ -167,6 +170,11 @@ export default class TwitterAPI {
       //   throw new RateLimitError()
       // }
       if (json.errors) {
+        if (retryNumber < MAX_RETRY_COUNT && json.errors[0]?.code === TwitterError.OverCapacity) {
+          texts.log('[tw] retrying bc over capacity', { retryNumber }, options.url)
+          await setTimeoutAsync(100 * retryNumber)
+          return this.fetch(options, retryNumber + 1)
+        }
         handleErrors(options.url, res.statusCode, json)
       }
       if (options.includeHeaders) return { headers: res.headers, json }
