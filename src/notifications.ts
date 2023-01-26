@@ -53,7 +53,7 @@ export default class Notifications {
                 const tweetID = nEntry.template?.aggregateUserActionsV1?.targetObjects[0]?.tweet.id
                 this.messageTweetMap.set(id, tweetID)
                 const m = mapNotification(json.globalObjects, id, content.notification, this.papi.currentUser.id_str)
-                messages.push(m)
+                if (!this.papi.onlyMentionsInNotifThread) messages.push(m)
               }
             }
           })

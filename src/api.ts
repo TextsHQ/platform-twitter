@@ -11,6 +11,7 @@ import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
 import Notifications from './notifications'
 import type { TwitterUser } from './twitter-types'
+import type TwitterPlatformInfo from './info'
 
 const { Sentry } = texts
 
@@ -29,6 +30,8 @@ export default class Twitter implements PlatformAPI {
 
   private sendNotificationsThread = false
 
+  onlyMentionsInNotifThread = false
+
   private notifications: Notifications
 
   private lastSeenEventIds = {
@@ -37,8 +40,9 @@ export default class Twitter implements PlatformAPI {
     untrusted_last_seen_event_id: 0,
   }
 
-  init = async (cookieJarJSON: string, _: AccountInfo, prefs: Record<string, any>) => {
+  init = async (cookieJarJSON: string, _: AccountInfo, prefs: Record<keyof typeof TwitterPlatformInfo['prefs'], any>) => {
     this.sendNotificationsThread = prefs?.show_notifications_thread
+    this.onlyMentionsInNotifThread = prefs?.show_only_mentions_in_notifications_thread
     if (!cookieJarJSON) return
     const cookieJar = CookieJar.fromJSON(cookieJarJSON)
     await this.api.setLoginState(cookieJar)

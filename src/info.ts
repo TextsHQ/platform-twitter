@@ -60,10 +60,15 @@ const info: PlatformInfo = {
   },
   prefs: {
     show_notifications_thread: {
-      label: 'Show Twitter notifications as a thread',
+      label: 'Show Twitter like/retweet/mentions notifications as a thread',
       type: 'checkbox',
       default: false,
     },
+    // show_only_mentions_in_notifications_thread: {
+    //   label: 'Show only mentions in Notifications thread',
+    //   type: 'checkbox',
+    //   default: false,
+    // },
   },
   notifications: {
     web: {
