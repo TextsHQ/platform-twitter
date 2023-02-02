@@ -16,7 +16,7 @@ const randomBytes = util.promisify(crypto.randomBytes)
 
 const AUTHORIZATION = 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
 
-const MAX_RETRY_COUNT = 4
+const MAX_RETRY_COUNT = 5
 
 const commonHeaders = {
   'Accept-Language': 'en',
