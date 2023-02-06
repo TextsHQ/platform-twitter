@@ -5,7 +5,7 @@ import { randomUUID as uuid } from 'crypto'
 import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo, User } from '@textshq/platform-sdk'
 import { pick } from 'lodash'
 
-import { mapThreads, mapMessage, mapMessages, mapEvent, mapUser, REACTION_MAP_TO_TWITTER, mapCurrentUser, mapUserUpdate, mapMessageLink } from './mappers'
+import { mapThreads, mapMessage, mapMessages, mapEvent, mapUser, REACTION_MAP_TO_TWITTER, mapUserUpdate, mapMessageLink } from './mappers'
 import TwitterAPI, { handleJSONErrors } from './network-api'
 import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
@@ -154,7 +154,7 @@ export default class Twitter implements PlatformAPI {
     }
   }
 
-  getCurrentUser = () => mapCurrentUser(this.currentUser)
+  getCurrentUser = () => mapUser(this.currentUser)
 
   searchUsers = mem(async (typed: string) => {
     const { users } = await this.api.typeahead(typed) || {}

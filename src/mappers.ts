@@ -119,13 +119,6 @@ export function mapParticipant(user: TwitterUser, participant: TwitterThreadPart
   }
 }
 
-export function mapCurrentUser(user: TwitterUser): CurrentUser {
-  return {
-    ...mapUser(user),
-    displayText: '@' + user.screen_name,
-  }
-}
-
 const MAP_THREAD_TYPE = {
   ONE_TO_ONE: 'single',
   GROUP_DM: 'group',
