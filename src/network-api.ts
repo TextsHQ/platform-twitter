@@ -89,10 +89,13 @@ const SENTRY_IGNORED_ERRORS = [TwitterError.OverCapacity, TwitterError.SessionNo
 function handleErrors(url: string, statusCode: number, json: any) {
   // { errors: [ { code: 32, message: 'Could not authenticate you.' } ] }
   const errors = json.errors as { code: number, message: string }[]
-  const loggedOutError = errors.find(e => e.code === 32 || e.code === 126)
+  const loggedOutError = errors.find(e => e.code === TwitterError.InvalidCredentials || e.code === TwitterError.LoggedOut)
   if (loggedOutError) {
     throw new ReAuthError(loggedOutError!.message)
     // todo track reauth event
+  }
+  if (errors) {
+    throw Error(errors.map(e => `${e.code}: ${e.message}`).join(', '))
   }
   texts.log(url, statusCode, json.errors)
   const filteredErrors = errors.filter(err => !SENTRY_IGNORED_ERRORS.includes(err.code))
@@ -102,13 +105,6 @@ function handleErrors(url: string, statusCode: number, json: any) {
         errors: json.errors,
       },
     })
-  }
-}
-
-export function handleJSONErrors(json: any) {
-  if (json?.errors) {
-    Sentry.captureMessage('twitter.handleJSONErrors') // this function might be redundant since handleErrors takes care of this
-    throw Error(json.errors.map(e => `${e.code}: ${e.message}`).join(', '))
   }
 }
 
@@ -147,6 +143,7 @@ export default class TwitterAPI {
     referer?: string
     url: string
     includeHeaders?: boolean
+    dontThrow?: boolean
   }, retryNumber = 0) => {
     if (!this.cookieJar) throw new Error('Twitter cookie jar not found')
     // if (IS_DEV) console.log('[TW] CALLING', options.url)
@@ -175,7 +172,7 @@ export default class TwitterAPI {
           await setTimeoutAsync(100 * retryNumber)
           return this.fetch(options, retryNumber + 1)
         }
-        handleErrors(options.url, res.statusCode, json)
+        if (!options.dontThrow) handleErrors(options.url, res.statusCode, json)
       }
       if (options.includeHeaders) return { headers: res.headers, json }
       return json
@@ -438,6 +435,7 @@ export default class TwitterAPI {
 
   dm_user_updates = (cursor: string) =>
     this.fetch({
+      dontThrow: true,
       includeHeaders: true,
       url: `${API_ENDPOINT}1.1/dm/user_updates.json`,
       referer: 'https://twitter.com/messages',

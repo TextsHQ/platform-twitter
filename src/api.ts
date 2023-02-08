@@ -6,10 +6,11 @@ import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Pagina
 import { pick } from 'lodash'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, mapUser, REACTION_MAP_TO_TWITTER, mapUserUpdate, mapMessageLink } from './mappers'
-import TwitterAPI, { handleJSONErrors } from './network-api'
+import TwitterAPI from './network-api'
 import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
 import Notifications from './notifications'
+import { TwitterError } from './errors'
 import type { TwitterUser } from './twitter-types'
 import type TwitterPlatformInfo from './info'
 
@@ -47,7 +48,6 @@ export default class Twitter implements PlatformAPI {
     const cookieJar = CookieJar.fromJSON(cookieJarJSON)
     await this.api.setLoginState(cookieJar)
     await this.afterAuth()
-    if (!this.currentUser?.id_str) throw new Error('current user id not present')
   }
 
   private processUserUpdates = (json: any) => {
@@ -72,7 +72,7 @@ export default class Twitter implements PlatformAPI {
         // texts.log(JSON.stringify(json, null, 2))
         if (json?.user_events) {
           this.processUserUpdates(json)
-        } else if (json?.errors?.[0]?.code === 88) { // RateLimitExceeded
+        } else if (json?.errors?.[0]?.code === TwitterError.RateLimitExceeded) {
           const rateLimitReset = headers['x-rate-limit-reset']
           const resetMs = (+rateLimitReset * 1000) - Date.now()
           nextFetchTimeoutMs = resetMs
@@ -138,8 +138,7 @@ export default class Twitter implements PlatformAPI {
     if (!cookieJarJSON) return { type: 'error', errorMessage: 'Cookies not found' }
     await this.api.setLoginState(CookieJar.fromJSON(cookieJarJSON as any))
     await this.afterAuth()
-    if (this.currentUser?.id_str) return { type: 'success' }
-    handleJSONErrors(this.currentUser)
+    return { type: 'success' }
   }
 
   logout = () => this.api.account_logout()
@@ -149,6 +148,7 @@ export default class Twitter implements PlatformAPI {
   private afterAuth = async () => {
     const response = await this.api.account_verify_credentials()
     this.currentUser = response
+    if (!response?.id_str) throw new Error('current user id not present')
     if (this.sendNotificationsThread) {
       this.notifications = new Notifications(this, this.api)
     }
@@ -239,7 +239,6 @@ export default class Twitter implements PlatformAPI {
       return this.getThread(threadID)
     }
     const json = await this.api.dm_new({ text: messageText, recipientIDs: userIDs.join(',') })
-    handleJSONErrors(json)
     const { entries } = json
     const threadID = (entries as any[]).find(e => e.conversation_create)?.conversation_create?.conversation_id
     return this.getThread(threadID)
@@ -247,7 +246,6 @@ export default class Twitter implements PlatformAPI {
 
   private tweet = async (text: string, inReplyToTweetID: string) => {
     const json = await this.api.createTweet(text, inReplyToTweetID)
-    handleJSONErrors(json)
     this.onServerEvent([{
       type: ServerEventType.TOAST,
       toast: {
@@ -274,7 +272,6 @@ export default class Twitter implements PlatformAPI {
     const json = await (fileBuffer
       ? this.sendFileFromBuffer(threadID, content.text, fileBuffer, content.mimeType, msgSendOptions)
       : this.sendTextMessage(threadID, content.text, msgSendOptions))
-    handleJSONErrors(json)
     const mapped = (json.entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
     return mapped
   }
@@ -310,12 +307,12 @@ export default class Twitter implements PlatformAPI {
   addReaction = (threadID: string, messageID: string, reactionKey: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
       ? this.notifications.addReaction(messageID, reactionKey)
-      : this.api.dm_reaction_new(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)).then(handleJSONErrors)
+      : this.api.dm_reaction_new(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID))
 
   removeReaction = (threadID: string, messageID: string, reactionKey: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
       ? this.notifications.removeReaction(messageID, reactionKey)
-      : this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID)).then(handleJSONErrors)
+      : this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID))
 
   sendReadReceipt = (threadID: string, messageID: string, messageCursor: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
@@ -334,26 +331,23 @@ export default class Twitter implements PlatformAPI {
 
   deleteMessage = async (threadID: string, messageID: string) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Notifications cannot be deleted from the notifications thread')
-    const json = await this.api.dm_destroy(threadID, messageID)
-    handleJSONErrors(json)
+    await this.api.dm_destroy(threadID, messageID)
   }
 
   updateThread = async (threadID: string, updates: Partial<Thread>) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) return
     if ('title' in updates) {
-      const json = await this.api.dm_conversation_update_name(threadID, updates.title)
-      handleJSONErrors(json)
+      await this.api.dm_conversation_update_name(threadID, updates.title)
     }
     if ('mutedUntil' in updates) {
-      const json = await (updates.mutedUntil === 'forever'
+      await (updates.mutedUntil === 'forever'
         ? this.api.dm_conversation_disable_notifications
         : this.api.dm_conversation_enable_notifications)(threadID)
-      handleJSONErrors(json)
     }
     if ('folderName' in updates) {
       if (updates.folderName === InboxName.NORMAL) {
-        const json = await this.api.dm_conversation_accept(threadID)
-        handleJSONErrors(json)
+        await this.api.dm_conversation_accept(threadID)
+
       }
     }
   }
