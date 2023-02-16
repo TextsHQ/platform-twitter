@@ -235,6 +235,7 @@ export default class Twitter implements PlatformAPI {
     if (userIDs.length === 0) return null
     if (userIDs.length === 1) {
       const [userID] = userIDs
+      if (userID.startsWith('notifications_')) return
       const threadID = `${this.currentUser.id_str}-${userID}`
       return this.getThread(threadID)
     }

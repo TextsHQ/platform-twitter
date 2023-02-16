@@ -107,7 +107,7 @@ export default class Notifications {
 
   async getThread() {
     const participants = Object.keys(icons).map<User>(iconName => ({
-      id: iconName,
+      id: 'notifications_' + iconName,
       fullName: ' ',
       imgURL: icons[iconName],
     }))
