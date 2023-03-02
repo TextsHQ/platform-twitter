@@ -240,7 +240,7 @@ export default class Twitter implements PlatformAPI {
       return this.getThread(threadID)
     }
     const json = await this.api.dm_new({ text: messageText, recipientIDs: userIDs })
-    if (!json.data?.create_dm?.conversation_id) throw Error('Invalid conversation ID')
+    if (!json.data?.create_dm?.conversation_id) throw Error(`Missing conversation_id in ${JSON.stringify(json)}`)
     return this.getThread(json.data.create_dm.conversation_id)
   }
 
