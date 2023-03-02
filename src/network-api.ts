@@ -501,8 +501,17 @@ export default class TwitterAPI {
   dm_conversation_typing = (threadID: string) =>
     this.fetch({
       method: 'POST',
-      url: `${API_ENDPOINT}1.1/dm/conversation/${threadID}/typing.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
+      url: `${GRAPHQL_ENDPOINT}HL96-xZ3Y81IEzAdczDokg/useTypingNotifierMutation`,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        variables: JSON.stringify({
+          conversationId: threadID,
+        }),
+        queryId: 'HL96-xZ3Y81IEzAdczDokg',
+      }),
+      referer: 'https://twitter.com/',
     })
 
   dm_conversation_delete = (threadID: string) =>
