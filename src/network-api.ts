@@ -677,7 +677,7 @@ export default class TwitterAPI {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        variables: JSON.stringify({ ...variables }),
+        variables: JSON.stringify(variables),
         queryId: 'MaxK2PKX1F9Z-9SwqwavTw',
       }),
       referer: 'https://twitter.com/',
