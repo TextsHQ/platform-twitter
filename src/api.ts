@@ -11,7 +11,7 @@ import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
 import Notifications from './notifications'
 import { TwitterError } from './errors'
-import type { TwitterUser } from './twitter-types'
+import type { TwitterUser, TwitterMessage } from './twitter-types'
 import type TwitterPlatformInfo from './info'
 
 const { Sentry } = texts
@@ -270,11 +270,11 @@ export default class Twitter implements PlatformAPI {
       return false
     }
     const fileBuffer = content.filePath ? await fs.readFile(content.filePath) : content.fileBuffer
-    const json = await (fileBuffer
+    await (fileBuffer
       ? this.sendFileFromBuffer(threadID, content.text, fileBuffer, content.mimeType, msgSendOptions)
       : this.sendTextMessage(threadID, content.text, msgSendOptions))
-    const mapped = (json.entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
-    return mapped
+
+    return true
   }
 
   private sendTextMessage = (threadID: string, text: string, { pendingMessageID }: MessageSendOptions) =>
