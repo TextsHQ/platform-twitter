@@ -6,7 +6,10 @@ export type TwitterMessage = {} & any
 type SendMessageTargetType = { conversation_id: string } | { participant_ids: string[] }
 export type SendMessageVariables = {
   message: {
-    card: null
+    card?: {
+      uri: 'tombstone://card'
+      text: string
+    }
     media?: {
       id: string
       text: string

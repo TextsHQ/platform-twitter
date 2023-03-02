@@ -365,9 +365,15 @@ export default class TwitterAPI {
         id: mediaID,
         text,
       }
+    } else if (!includeLinkPreview) {
+      variables.message.card = {
+        uri: 'tombstone://card',
+        text,
+      }
     } else {
       variables.message.text = { text }
     }
+
     const response = await this.fetch({
       method: 'POST',
       url: `${GRAPHQL_ENDPOINT}MaxK2PKX1F9Z-9SwqwavTw/useSendMessageMutation`,
