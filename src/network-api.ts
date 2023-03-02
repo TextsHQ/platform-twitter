@@ -343,11 +343,12 @@ export default class TwitterAPI {
   dm_new({ text, threadID, recipientIDs, generatedMsgID, mediaID, includeLinkPreview = true }: {
     text: string
     threadID?: string
-    recipientIDs?: string
+    recipientIDs?: string[]
     generatedMsgID?: string
     mediaID?: string
     includeLinkPreview?: boolean
   }) {
+    const target = recipientIDs ? { participant_ids: recipientIDs } : { conversation_id: threadID }
     const variables: SendMessageVariables = {
       message: {
         text: null,
@@ -356,9 +357,7 @@ export default class TwitterAPI {
         card: null,
       },
       requestId: (generatedMsgID || uuid()).toUpperCase(),
-      target: {
-        conversation_id: threadID,
-      }
+      target,
     }
 
     if (mediaID) {

@@ -11,7 +11,7 @@ import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
 import Notifications from './notifications'
 import { TwitterError } from './errors'
-import type { TwitterUser, TwitterMessage } from './twitter-types'
+import type { TwitterUser } from './twitter-types'
 import type TwitterPlatformInfo from './info'
 
 const { Sentry } = texts
@@ -239,10 +239,9 @@ export default class Twitter implements PlatformAPI {
       const threadID = `${this.currentUser.id_str}-${userID}`
       return this.getThread(threadID)
     }
-    const json = await this.api.dm_new({ text: messageText, recipientIDs: userIDs.join(',') })
-    const { entries } = json
-    const threadID = (entries as any[]).find(e => e.conversation_create)?.conversation_create?.conversation_id
-    return this.getThread(threadID)
+    const json = await this.api.dm_new({ text: messageText, recipientIDs: userIDs })
+    if (!json.data?.create_dm?.conversation_id) throw Error('Invalid conversation ID')
+    return this.getThread(json.data.create_dm.conversation_id)
   }
 
   private tweet = async (text: string, inReplyToTweetID: string) => {
