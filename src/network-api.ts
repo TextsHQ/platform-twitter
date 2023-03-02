@@ -8,6 +8,7 @@ import { texts, ReAuthError, FetchOptions } from '@textshq/platform-sdk'
 
 import { TwitterError } from './errors'
 import { chunkBuffer } from './util'
+import type { SendMessageVariables } from "./twitter-types";
 
 const { constants, IS_DEV, Sentry } = texts
 const { USER_AGENT } = constants
@@ -347,23 +348,29 @@ export default class TwitterAPI {
     mediaID?: string
     includeLinkPreview?: boolean
   }) {
-    const form = {
-      ...commonDMParams,
-      text,
-      conversation_id: threadID,
-      media_id: mediaID,
-      recipient_ids: threadID ? 'false' : recipientIDs,
-      request_id: (generatedMsgID || uuid()).toUpperCase(),
-      ext: EXT,
-      ...(includeLinkPreview ? {} : { card_uri: 'tombstone://card' }),
+    const variables: SendMessageVariables = {
+      message: {
+        text: null,
+        media: null,
+        tweet: null,
+        card: null,
+      },
+      requestId: (generatedMsgID || uuid()).toUpperCase(),
+      target: {
+        conversation_id: threadID,
+      }
     }
-    if (!form.media_id) delete form.media_id
-    return this.fetch({
-      method: 'POST',
-      url: `${API_ENDPOINT}1.1/dm/new.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
-      form,
-    })
+
+    if (mediaID) {
+      variables.message.media = {
+        id: mediaID,
+        text,
+      }
+    } else {
+      variables.message.text = { text }
+    }
+
+    return this.sendMessage(variables)
   }
 
   dm_destroy = (threadID: string, messageID: string) =>
@@ -651,6 +658,20 @@ export default class TwitterAPI {
       url: 'https://twitter.com/i/api/2/notifications/all/last_seen_cursor.json',
       form: { cursor },
       referer: 'https://twitter.com/notifications',
+    })
+
+  sendMessage = (variables: SendMessageVariables) =>
+    this.fetch({
+      method: 'POST',
+      url: `${GRAPHQL_ENDPOINT}MaxK2PKX1F9Z-9SwqwavTw/useSendMessageMutation`,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        variables: JSON.stringify({ ...variables }),
+        queryId: 'MaxK2PKX1F9Z-9SwqwavTw',
+      }),
+      referer: 'https://twitter.com/',
     })
 
   favoriteTweet = (tweetID: string) =>
