@@ -8,7 +8,7 @@ import { texts, ReAuthError, FetchOptions } from '@textshq/platform-sdk'
 
 import { TwitterError } from './errors'
 import { chunkBuffer } from './util'
-import type { SendMessageVariables } from "./twitter-types";
+import type { SendMessageVariables } from './twitter-types'
 
 const { constants, IS_DEV, Sentry } = texts
 const { USER_AGENT } = constants
