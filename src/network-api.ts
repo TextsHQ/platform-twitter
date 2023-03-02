@@ -340,7 +340,7 @@ export default class TwitterAPI {
       referer: 'https://twitter.com/messages/compose',
     })
 
-  dm_new({ text, threadID, recipientIDs, generatedMsgID, mediaID, includeLinkPreview = true }: {
+  async dm_new({ text, threadID, recipientIDs, generatedMsgID, mediaID, includeLinkPreview = true }: {
     text: string
     threadID?: string
     recipientIDs?: string[]
@@ -368,8 +368,28 @@ export default class TwitterAPI {
     } else {
       variables.message.text = { text }
     }
+    const response = await this.fetch({
+      method: 'POST',
+      url: `${GRAPHQL_ENDPOINT}MaxK2PKX1F9Z-9SwqwavTw/useSendMessageMutation`,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        variables: JSON.stringify(variables),
+        queryId: 'MaxK2PKX1F9Z-9SwqwavTw',
+      }),
+      referer: 'https://twitter.com/',
+    })
 
-    return this.sendMessage(variables)
+    if (response?.data?.create_dm?.__typename !== 'CreateDmSuccess') {
+      throw Error(
+        response?.data?.create_dm?.dm_validation_failure_type
+          ? response.data.create_dm.dm_validation_failure_type
+          : `unknown error ${JSON.stringify(response)}`
+      )
+    }
+
+    return response
   }
 
   dm_destroy = (threadID: string, messageID: string) =>
@@ -666,20 +686,6 @@ export default class TwitterAPI {
       url: 'https://twitter.com/i/api/2/notifications/all/last_seen_cursor.json',
       form: { cursor },
       referer: 'https://twitter.com/notifications',
-    })
-
-  sendMessage = (variables: SendMessageVariables) =>
-    this.fetch({
-      method: 'POST',
-      url: `${GRAPHQL_ENDPOINT}MaxK2PKX1F9Z-9SwqwavTw/useSendMessageMutation`,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        variables: JSON.stringify(variables),
-        queryId: 'MaxK2PKX1F9Z-9SwqwavTw',
-      }),
-      referer: 'https://twitter.com/',
     })
 
   favoriteTweet = (tweetID: string) =>
