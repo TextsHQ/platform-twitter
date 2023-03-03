@@ -127,7 +127,7 @@ export default class Twitter implements PlatformAPI {
   }
 
   onThreadSelected = async (threadID: string) => {
-    const toSubscribe = threadID ? [
+    const toSubscribe = threadID && threadID !== NOTIFICATIONS_THREAD_ID ? [
       '/dm_update/' + threadID,
       '/dm_typing/' + threadID,
     ] : []
