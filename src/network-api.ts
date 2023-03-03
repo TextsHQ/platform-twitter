@@ -189,6 +189,21 @@ export default class TwitterAPI {
     }
   }
 
+  gqlFetch = async (variables: object, queryId: string, mutationName: string) => {
+    return this.fetch({
+      method: 'POST',
+      url: `${GRAPHQL_ENDPOINT}${queryId}/${mutationName}`,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        variables: JSON.stringify(variables),
+        queryId,
+      }),
+      referer: 'https://twitter.com/',
+    })
+  }
+
   authenticatedGet = async (url: string) => {
     if (!this.cookieJar) throw new Error('Not authorized')
     await this.setCSRFTokenCookie()
@@ -494,23 +509,19 @@ export default class TwitterAPI {
       },
     })
 
-  dm_reaction = (action: string, reactionKey: string, threadID: string, messageID: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${API_ENDPOINT}1.1/dm/reaction/${action}.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
-      searchParams: {
-        reaction_key: reactionKey,
-        conversation_id: threadID,
-        dm_id: messageID,
-      },
-    })
-
   dm_reaction_new = (reactionKey: string, threadID: string, messageID: string) =>
-    this.dm_reaction('new', reactionKey, threadID, messageID)
+    this.gqlFetch({
+      conversationId: threadID,
+      messageId: messageID,
+      reactionTypes: [reactionKey],
+    }, 'VvqwjKXjT6j6CTqvlqdYCw', 'useDMReactionMutationAddMutation')
 
   dm_reaction_delete = (reactionKey: string, threadID: string, messageID: string) =>
-    this.dm_reaction('delete', reactionKey, threadID, messageID)
+    this.gqlFetch({
+      conversationId: threadID,
+      messageId: messageID,
+      reactionTypes: [reactionKey],
+    }, '-vqtYGrnU8xx1d_9tVE0lw', 'useDMReactionMutationRemoveMutation')
 
   dm_conversation_mark_read = (threadID: string, messageID: string) =>
     this.fetch({
