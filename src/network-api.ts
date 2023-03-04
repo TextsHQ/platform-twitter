@@ -534,8 +534,8 @@ export default class TwitterAPI {
       },
     })
 
-  dm_conversation_typing = (threadID: string) =>
-    this.fetch({
+  dm_conversation_typing = async (threadID: string) => {
+    const response = await this.fetch({
       method: 'POST',
       url: `${GRAPHQL_ENDPOINT}HL96-xZ3Y81IEzAdczDokg/useTypingNotifierMutation`,
       headers: {
@@ -549,6 +549,16 @@ export default class TwitterAPI {
       }),
       referer: 'https://twitter.com/',
     })
+    if (response.data.post_typing_indicator.__typename === 'TypingIndicatorSuccess') return true
+    const errorText = '[tw] dm_conversation_typing failed'
+    texts.log(errorText, response)
+    Sentry.captureException(Error(errorText), {
+      extra: {
+        response,
+      },
+    })
+    return false
+  }
 
   dm_conversation_delete = (threadID: string) =>
     this.fetch({
