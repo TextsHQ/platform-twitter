@@ -75,6 +75,7 @@ const API_ENDPOINT = 'https://api.twitter.com/'
 const ENDPOINT = 'https://twitter.com/'
 const UPLOAD_ENDPOINT = 'https://upload.twitter.com/'
 const GRAPHQL_ENDPOINT = 'https://twitter.com/i/api/graphql/'
+const NOTIFICATIONS_URL = 'https://twitter.com/notifications'
 const MAX_CHUNK_SIZE = 1 * 1024 * 1024
 
 const genCSRFToken = () =>
@@ -193,7 +194,7 @@ export default class TwitterAPI {
     }
   }
 
-  gqlFetch = async (variables: object, queryId: string, mutationName: string) => {
+  gqlMutation = async (variables: object, queryId: string, mutationName: string, fetchOptions: Partial<ReturnType<typeof this.fetch>> = {}, bodyExtras?: object) => {
     return this.fetch({
       method: 'POST',
       url: `${GRAPHQL_ENDPOINT}${queryId}/${mutationName}`,
@@ -202,9 +203,23 @@ export default class TwitterAPI {
       },
       body: JSON.stringify({
         variables: JSON.stringify(variables),
+        ...bodyExtras,
         queryId,
       }),
       referer: 'https://twitter.com/',
+      ...fetchOptions,
+    })
+  }
+
+  gqlQuery = async (variables: object, queryId: string, queryName: string, fetchOptions: Partial<ReturnType<typeof this.fetch>> = {}) => {
+    return this.fetch({
+      method: 'GET',
+      url: `${GRAPHQL_ENDPOINT}${queryId}/${queryName}?variables=` + encodeURIComponent(JSON.stringify(variables)),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      referer: 'https://twitter.com/',
+      ...fetchOptions,
     })
   }
 
@@ -393,18 +408,7 @@ export default class TwitterAPI {
       variables.message.text = { text }
     }
 
-    const response = await this.fetch({
-      method: 'POST',
-      url: `${GRAPHQL_ENDPOINT}MaxK2PKX1F9Z-9SwqwavTw/useSendMessageMutation`,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        variables: JSON.stringify(variables),
-        queryId: 'MaxK2PKX1F9Z-9SwqwavTw',
-      }),
-      referer: 'https://twitter.com/',
-    })
+    const response = await this.gqlMutation(variables, 'MaxK2PKX1F9Z-9SwqwavTw', 'useSendMessageMutation')
 
     if (response?.data?.create_dm?.__typename !== 'CreateDmSuccess') {
       throw Error(
@@ -514,14 +518,14 @@ export default class TwitterAPI {
     })
 
   dm_reaction_new = (reactionKey: string, threadID: string, messageID: string) =>
-    this.gqlFetch({
+    this.gqlMutation({
       conversationId: threadID,
       messageId: messageID,
       reactionTypes: [normalizeReaction(reactionKey)],
     }, 'VvqwjKXjT6j6CTqvlqdYCw', 'useDMReactionMutationAddMutation')
 
   dm_reaction_delete = (reactionKey: string, threadID: string, messageID: string) =>
-    this.gqlFetch({
+    this.gqlMutation({
       conversationId: threadID,
       messageId: messageID,
       reactionTypes: [normalizeReaction(reactionKey)],
@@ -539,20 +543,9 @@ export default class TwitterAPI {
     })
 
   dm_conversation_typing = async (threadID: string) => {
-    const response = await this.fetch({
-      method: 'POST',
-      url: `${GRAPHQL_ENDPOINT}HL96-xZ3Y81IEzAdczDokg/useTypingNotifierMutation`,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        variables: JSON.stringify({
-          conversationId: threadID,
-        }),
-        queryId: 'HL96-xZ3Y81IEzAdczDokg',
-      }),
-      referer: 'https://twitter.com/',
-    })
+    const response = await this.gqlMutation({
+      conversationId: threadID,
+    }, 'HL96-xZ3Y81IEzAdczDokg', 'useTypingNotifierMutation')
     if (response?.data?.post_typing_indicator?.__typename === 'TypingIndicatorSuccess') return true
     throw new Error(`[tw] dm_conversation_typing failed: ${JSON.stringify(response)}`)
   }
@@ -701,7 +694,7 @@ export default class TwitterAPI {
       headers: {
         'x-twitter-polling': 'true',
       },
-      referer: 'https://twitter.com/notifications',
+      referer: NOTIFICATIONS_URL,
     })
 
   notifications_all_last_seen_cursor = (cursor: string) =>
@@ -709,94 +702,64 @@ export default class TwitterAPI {
       method: 'POST',
       url: 'https://twitter.com/i/api/2/notifications/all/last_seen_cursor.json',
       form: { cursor },
-      referer: 'https://twitter.com/notifications',
+      referer: NOTIFICATIONS_URL,
     })
 
   favoriteTweet = (tweetID: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${GRAPHQL_ENDPOINT}lI07N6Otwv1PhnEgXILM7A/FavoriteTweet`,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        variables: JSON.stringify({
-          tweet_id: tweetID,
-        }),
-        queryId: 'lI07N6Otwv1PhnEgXILM7A',
-      }),
-      referer: 'https://twitter.com/notifications',
+    this.gqlMutation({
+      tweet_id: tweetID,
+    }, 'lI07N6Otwv1PhnEgXILM7A', 'FavoriteTweet', {
+      referer: NOTIFICATIONS_URL,
     })
 
   unfavoriteTweet = (tweetID: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${GRAPHQL_ENDPOINT}ZYKSe-w7KEslx3JhSIk5LA/UnfavoriteTweet`,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        variables: JSON.stringify({
-          tweet_id: tweetID,
-        }),
-        queryId: 'ZYKSe-w7KEslx3JhSIk5LA',
-      }),
-      referer: 'https://twitter.com/notifications',
+    this.gqlMutation({
+      tweet_id: tweetID,
+    }, 'ZYKSe-w7KEslx3JhSIk5LA', 'UnfavoriteTweet', {
+      referer: NOTIFICATIONS_URL,
     })
 
-  createTweet = (text: string, in_reply_to_tweet_id?: string) =>
-    this.fetch({
-      method: 'POST',
-      url: `${GRAPHQL_ENDPOINT}yL4KIHnJPXt-JUpRDrBDDw/CreateTweet`,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        variables: {
-          tweet_text: text,
-          dark_request: false,
-          media: { media_entities: [], possibly_sensitive: false },
-          reply: in_reply_to_tweet_id ? { in_reply_to_tweet_id, exclude_reply_user_ids: [] } : undefined,
-          withDownvotePerspective: false,
-          withReactionsMetadata: false,
-          withReactionsPerspective: false,
-          withSuperFollowsTweetFields: true,
-          withSuperFollowsUserFields: true,
-          semantic_annotation_ids: [],
-        },
-        features: {
-          view_counts_public_visibility_enabled: true,
-          view_counts_everywhere_api_enabled: true,
-          longform_notetweets_consumption_enabled: false,
-          tweetypie_unmention_optimization_enabled: true,
-          responsive_web_uc_gql_enabled: true,
-          vibe_api_enabled: true,
-          responsive_web_edit_tweet_api_enabled: true,
-          graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-          interactive_text_enabled: true,
-          responsive_web_text_conversations_enabled: false,
-          responsive_web_twitter_blue_verified_badge_is_enabled: true,
-          verified_phone_label_enabled: true,
-          standardized_nudges_misinfo: true,
-          tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: false,
-          responsive_web_graphql_timeline_navigation_enabled: true,
-          responsive_web_enhance_cards_enabled: false,
-        },
-        queryId: 'yL4KIHnJPXt-JUpRDrBDDw',
-      }),
-      referer: 'https://twitter.com/notifications',
-    })
+  createTweet = (text: string, in_reply_to_tweet_id?: string) => this.gqlMutation( {
+    tweet_text: text,
+    dark_request: false,
+    media: { media_entities: [], possibly_sensitive: false },
+    reply: in_reply_to_tweet_id ? { in_reply_to_tweet_id, exclude_reply_user_ids: [] } : undefined,
+    withDownvotePerspective: false,
+    withReactionsMetadata: false,
+    withReactionsPerspective: false,
+    withSuperFollowsTweetFields: true,
+    withSuperFollowsUserFields: true,
+    semantic_annotation_ids: [],
+  }, 'yL4KIHnJPXt-JUpRDrBDDw', 'CreateTweet', {
+    referer: NOTIFICATIONS_URL,
+  }, {
+    features: {
+      view_counts_public_visibility_enabled: true,
+      view_counts_everywhere_api_enabled: true,
+      longform_notetweets_consumption_enabled: false,
+      tweetypie_unmention_optimization_enabled: true,
+      responsive_web_uc_gql_enabled: true,
+      vibe_api_enabled: true,
+      responsive_web_edit_tweet_api_enabled: true,
+      graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
+      interactive_text_enabled: true,
+      responsive_web_text_conversations_enabled: false,
+      responsive_web_twitter_blue_verified_badge_is_enabled: true,
+      verified_phone_label_enabled: true,
+      standardized_nudges_misinfo: true,
+      tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: false,
+      responsive_web_graphql_timeline_navigation_enabled: true,
+      responsive_web_enhance_cards_enabled: false,
+    },
+  })
 
-  userByScreenName = (screen_name: string) =>
-    this.fetch({
-      method: 'GET',
-      url: `${GRAPHQL_ENDPOINT}7mjxD3-C6BxitPMVQ6w0-Q/UserByScreenName?variables=` + encodeURIComponent(JSON.stringify({
-        screen_name,
-        withSafetyModeUserFields: true,
-        withSuperFollowsUserFields: true,
-      })),
-      referer: `https://twitter.com/${screen_name}`,
-    })
+  userByScreenName = (screen_name: string) => this.gqlQuery({
+    screen_name,
+    withSafetyModeUserFields: true,
+    withSuperFollowsUserFields: true,
+  }, '7mjxD3-C6BxitPMVQ6w0-Q', 'UserByScreenName', {
+    referer: `https://twitter.com/${screen_name}`,
+  })
 
   private getPushDeviceInfo = (endpoint: string, p256dh: string, auth: string) => {
     const deviceId = 'Mac/Chrome' // can be Mac/Firefox, Mac/Safari, Mac/Other Browser, Other OS/Other Browser
