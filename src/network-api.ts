@@ -115,6 +115,10 @@ function getMediaCategory(mimeType: string) {
   if (mimeType.startsWith('video')) return MEDIA_CATEGORY.DM_VIDEO
 }
 
+function normalizeReaction(reaction: string) {
+  return reaction[0].toUpperCase() + reaction.slice(1)
+}
+
 export default class TwitterAPI {
   private csrfToken = ''
 
@@ -513,14 +517,14 @@ export default class TwitterAPI {
     this.gqlFetch({
       conversationId: threadID,
       messageId: messageID,
-      reactionTypes: [reactionKey],
+      reactionTypes: [normalizeReaction(reactionKey)],
     }, 'VvqwjKXjT6j6CTqvlqdYCw', 'useDMReactionMutationAddMutation')
 
   dm_reaction_delete = (reactionKey: string, threadID: string, messageID: string) =>
     this.gqlFetch({
       conversationId: threadID,
       messageId: messageID,
-      reactionTypes: [reactionKey],
+      reactionTypes: [normalizeReaction(reactionKey)],
     }, '-vqtYGrnU8xx1d_9tVE0lw', 'useDMReactionMutationRemoveMutation')
 
   dm_conversation_mark_read = (threadID: string, messageID: string) =>
