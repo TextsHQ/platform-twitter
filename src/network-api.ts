@@ -553,7 +553,7 @@ export default class TwitterAPI {
       }),
       referer: 'https://twitter.com/',
     })
-    if (response.data.post_typing_indicator.__typename === 'TypingIndicatorSuccess') return true
+    if (response?.data?.post_typing_indicator?.__typename === 'TypingIndicatorSuccess') return true
     throw new Error(`[tw] dm_conversation_typing failed: ${JSON.stringify(response)}`)
   }
 
