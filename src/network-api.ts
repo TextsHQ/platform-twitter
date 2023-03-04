@@ -554,14 +554,7 @@ export default class TwitterAPI {
       referer: 'https://twitter.com/',
     })
     if (response.data.post_typing_indicator.__typename === 'TypingIndicatorSuccess') return true
-    const errorText = '[tw] dm_conversation_typing failed'
-    texts.log(errorText, response)
-    Sentry.captureException(Error(errorText), {
-      extra: {
-        response,
-      },
-    })
-    return false
+    throw new Error(`[tw] dm_conversation_typing failed: ${JSON.stringify(response)}`)
   }
 
   dm_conversation_delete = (threadID: string) =>
