@@ -239,10 +239,9 @@ export default class Twitter implements PlatformAPI {
       const threadID = `${this.currentUser.id_str}-${userID}`
       return this.getThread(threadID)
     }
-    const json = await this.api.dm_new({ text: messageText, recipientIDs: userIDs.join(',') })
-    const { entries } = json
-    const threadID = (entries as any[]).find(e => e.conversation_create)?.conversation_create?.conversation_id
-    return this.getThread(threadID)
+    const json = await this.api.dm_new({ text: messageText, recipientIDs: userIDs })
+    if (!json.data?.create_dm?.conversation_id) throw Error(`Missing conversation_id in ${JSON.stringify(json)}`)
+    return this.getThread(json.data.create_dm.conversation_id)
   }
 
   private tweet = async (text: string, inReplyToTweetID: string) => {
@@ -270,11 +269,11 @@ export default class Twitter implements PlatformAPI {
       return false
     }
     const fileBuffer = content.filePath ? await fs.readFile(content.filePath) : content.fileBuffer
-    const json = await (fileBuffer
+    await (fileBuffer
       ? this.sendFileFromBuffer(threadID, content.text, fileBuffer, content.mimeType, msgSendOptions)
       : this.sendTextMessage(threadID, content.text, msgSendOptions))
-    const mapped = (json.entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id_str, undefined))
-    return mapped
+
+    return true
   }
 
   private sendTextMessage = (threadID: string, text: string, { pendingMessageID }: MessageSendOptions) =>
