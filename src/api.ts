@@ -2,7 +2,7 @@ import { promises as fs } from 'fs'
 import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
 import { randomUUID as uuid } from 'crypto'
-import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo, User } from '@textshq/platform-sdk'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo, User, NotificationsInfo, UserID, PhoneNumber, ThreadFolderName, LoginCreds } from '@textshq/platform-sdk'
 import { pick } from 'lodash'
 
 import { mapThreads, mapMessage, mapMessages, mapEvent, mapUser, REACTION_MAP_TO_TWITTER, mapUserUpdate, mapMessageLink } from './mappers'
@@ -134,7 +134,7 @@ export default class Twitter implements PlatformAPI {
     this.live.setSubscriptions(toSubscribe)
   }
 
-  login = async ({ cookieJarJSON }): Promise<LoginResult> => {
+  login = async ({ cookieJarJSON }: LoginCreds): Promise<LoginResult> => {
     if (!cookieJarJSON) return { type: 'error', errorMessage: 'Cookies not found' }
     await this.api.setLoginState(CookieJar.fromJSON(cookieJarJSON as any))
     await this.afterAuth()
@@ -161,7 +161,7 @@ export default class Twitter implements PlatformAPI {
     return (users as any[] || []).map(u => mapUser(u))
   })
 
-  getThreads = async (folderName: InboxName, pagination: PaginationArg): Promise<Paginated<Thread>> => {
+  getThreads = async (folderName: ThreadFolderName, pagination: PaginationArg): Promise<Paginated<Thread>> => {
     const { cursor, direction } = pagination || { cursor: null, direction: null }
     const inboxType = {
       [InboxName.NORMAL]: 'trusted',
@@ -223,7 +223,9 @@ export default class Twitter implements PlatformAPI {
     return mapThreads(conversation_timeline, this.currentUser)[0][0]
   }
 
-  getUser = async ({ username }: { username: string }): Promise<User> => {
+  getUser = async (ids: { userID: UserID } | { username: string } | { phoneNumber: PhoneNumber } | { email: string }): Promise<User> => {
+    if (!('username' in ids)) return
+    const { username } = ids
     const json = await this.api.userByScreenName(username)
     return {
       ...mapUser(json.data.user.result.legacy),
@@ -404,13 +406,13 @@ export default class Twitter implements PlatformAPI {
     return true
   }
 
-  registerForPushNotifications = async (type: 'web', token: string) => {
+  registerForPushNotifications = async (type: keyof NotificationsInfo, token: string) => {
     if (type !== 'web') throw Error('invalid type')
     const parsed: PushSubscriptionJSON = JSON.parse(token)
     await this.api.notifications_settings_login(parsed.endpoint, parsed.keys.p256dh, parsed.keys.auth)
   }
 
-  unregisterForPushNotifications = async (type: 'web', token: string) => {
+  unregisterForPushNotifications = async (type: keyof NotificationsInfo, token: string) => {
     if (type !== 'web') throw Error('invalid type')
     const parsed: PushSubscriptionJSON = JSON.parse(token)
     await this.api.notifications_settings_logout(parsed.endpoint, parsed.keys.p256dh, parsed.keys.auth)

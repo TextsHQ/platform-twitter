@@ -1,5 +1,6 @@
 import { isEqual } from 'lodash'
 import { texts } from '@textshq/platform-sdk'
+import type EventSource from 'eventsource'
 
 import type TwitterAPI from './network-api'
 
