@@ -1718,7 +1718,7 @@ __metadata:
     he: ^1.2.0
     lodash: ^4.17.20
     mem: ^8.0.0
-    tough-cookie: ^4.0.0
+    tough-cookie: ^4.1.2
     typescript: ^5.0.2
   languageName: unknown
   linkType: soft
@@ -4578,14 +4578,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tough-cookie@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "tough-cookie@npm:4.0.0"
+"tough-cookie@npm:^4.1.2":
+  version: 4.1.2
+  resolution: "tough-cookie@npm:4.1.2"
   dependencies:
     psl: ^1.1.33
     punycode: ^2.1.1
-    universalify: ^0.1.2
-  checksum: 0891b37eb7d17faa3479d47f0dce2e3007f2583094ad272f2670d120fbcc3df3b0b0a631ba96ecad49f9e2297d93ff8995ce0d3292d08dd7eabe162f5b224d69
+    universalify: ^0.2.0
+    url-parse: ^1.5.3
+  checksum: a7359e9a3e875121a84d6ba40cc184dec5784af84f67f3a56d1d2ae39b87c0e004e6ba7c7331f9622a7d2c88609032473488b28fe9f59a1fec115674589de39a
   languageName: node
   linkType: hard
 
@@ -4698,10 +4699,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"universalify@npm:^0.1.2":
-  version: 0.1.2
-  resolution: "universalify@npm:0.1.2"
-  checksum: 40cdc60f6e61070fe658ca36016a8f4ec216b29bf04a55dce14e3710cc84c7448538ef4dad3728d0bfe29975ccd7bfb5f414c45e7b78883567fb31b246f02dff
+"universalify@npm:^0.2.0":
+  version: 0.2.0
+  resolution: "universalify@npm:0.2.0"
+  checksum: e86134cb12919d177c2353196a4cc09981524ee87abf621f7bc8d249dbbbebaec5e7d1314b96061497981350df786e4c5128dbf442eba104d6e765bc260678b5
   languageName: node
   linkType: hard
 
@@ -4735,6 +4736,16 @@ __metadata:
     querystringify: ^2.1.1
     requires-port: ^1.0.0
   checksum: 3ede937508436c9685a60c90634894aaf745d75160c0092c7f36335c79563effedf1a9fe0181f98e9c5165af73ba5f8fe1dc6e274c6556ae170be01f6e54c67f
+  languageName: node
+  linkType: hard
+
+"url-parse@npm:^1.5.3":
+  version: 1.5.10
+  resolution: "url-parse@npm:1.5.10"
+  dependencies:
+    querystringify: ^2.1.1
+    requires-port: ^1.0.0
+  checksum: fbdba6b1d83336aca2216bbdc38ba658d9cfb8fc7f665eb8b17852de638ff7d1a162c198a8e4ed66001ddbf6c9888d41e4798912c62b4fd777a31657989f7bdf
   languageName: node
   linkType: hard
 
