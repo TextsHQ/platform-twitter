@@ -2,10 +2,10 @@ import { promises as fs } from 'fs'
 import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
 import { randomUUID as uuid } from 'crypto'
-import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, AccountInfo, User, NotificationsInfo, UserID, PhoneNumber, ThreadFolderName, LoginCreds } from '@textshq/platform-sdk'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, User, NotificationsInfo, UserID, PhoneNumber, ThreadFolderName, LoginCreds, ClientContext } from '@textshq/platform-sdk'
 import { pick } from 'lodash'
 
-import { mapThreads, mapMessage, mapMessages, mapEvent, mapUser, REACTION_MAP_TO_TWITTER, mapUserUpdate, mapMessageLink } from './mappers'
+import { mapThreads, mapMessages, mapEvent, mapUser, REACTION_MAP_TO_TWITTER, mapUserUpdate, mapMessageLink } from './mappers'
 import TwitterAPI from './network-api'
 import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
@@ -41,7 +41,7 @@ export default class Twitter implements PlatformAPI {
     untrusted_last_seen_event_id: 0,
   }
 
-  init = async (cookieJarJSON: string, _: AccountInfo, prefs: Record<keyof typeof TwitterPlatformInfo['prefs'], any>) => {
+  init = async (cookieJarJSON: string, _: ClientContext, prefs: Record<keyof typeof TwitterPlatformInfo['prefs'], any>) => {
     this.sendNotificationsThread = prefs?.show_notifications_thread
     this.onlyMentionsInNotifThread = prefs?.show_only_mentions_in_notifications_thread
     if (!cookieJarJSON) return
@@ -134,7 +134,8 @@ export default class Twitter implements PlatformAPI {
     this.live.setSubscriptions(toSubscribe)
   }
 
-  login = async ({ cookieJarJSON }: LoginCreds): Promise<LoginResult> => {
+  login = async (creds: LoginCreds): Promise<LoginResult> => {
+    const cookieJarJSON = 'cookieJarJSON' in creds && creds.cookieJarJSON
     if (!cookieJarJSON) return { type: 'error', errorMessage: 'Cookies not found' }
     await this.api.setLoginState(CookieJar.fromJSON(cookieJarJSON as any))
     await this.afterAuth()
@@ -384,8 +385,7 @@ export default class Twitter implements PlatformAPI {
 
   reportThread = async (type: 'spam', threadID: string, firstMessageID: string) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Notifications thread cannot be reported')
-    this.onServerEvent([{
-      type: ServerEventType.OPEN_WINDOW,
+    const result = await texts.openBrowserWindow({
       windowTitle: 'Report thread',
       url: 'https://twitter.com/i/safety/report_story?' + new URLSearchParams({
         client_location: encodeURIComponent('messages:thread:'),
@@ -402,7 +402,9 @@ export default class Twitter implements PlatformAPI {
         lang: 'en',
       }).toString(),
       cookieJar: this.api.cookieJar.toJSON(),
-    }])
+    })
+    const cj = CookieJar.fromJSON(result.cookieJar as any)
+    await this.api.setLoginState(cj)
     return true
   }
 
