@@ -37,34 +37,60 @@ function getTimestampFromSnowflake(snowflake: string) {
   return new Date(dateBits + TWITTER_EPOCH)
 }
 
-function mapEntities(entities: any, removeIndicies?: [number, number][]) {
+interface EntityBase {
+  indices: [number, number]
+}
+interface Entities {
+  hashtags?: (EntityBase & {
+    text: string
+  })[]
+  symbols?: (EntityBase & {
+    text: string
+  })[]
+  user_mentions?: (EntityBase & {
+    id_str: string
+    screen_name: string
+  })[]
+  media?: EntityBase[]
+  urls?: (EntityBase & {
+    url: string
+    expanded_url: string
+    display_url: string
+  })[]
+}
+
+function mapEntities(entities: Entities, removeIndices?: [number, number][]): TextEntity[] {
   if (!entities) return
   return [
-    ...(entities?.urls as any[] || []).map<TextEntity>(url => {
-      const shouldRemove = url.expanded_url.startsWith('https://twitter.com/messages/media/')
-        || removeIndicies?.toString() === url.indices.toString()
+    ...(entities?.urls || []).map<TextEntity>(url => {
+      const shouldRemove = url.expanded_url.startsWith('https://twitter.com/messages/media/') || removeIndices?.toString() === url.indices.toString()
+      const from = Math.max(0, url.indices[0] + (shouldRemove ? -1 : 0))
+      const to = url.indices[1]
+      if (shouldRemove) {
+        return { from, to, replaceWith: '' }
+      }
       return {
-        from: Math.max(0, url.indices[0] + (shouldRemove ? -1 : 0)),
-        to: url.indices[1],
-        replaceWith: shouldRemove ? '' : url.expanded_url.replace(/^https?:\/\//, ''),
-        link: shouldRemove ? undefined : url.expanded_url,
+        from,
+        to,
+        replaceWith: url.expanded_url.replace(/^https?:\/\//, ''),
+        link: url.expanded_url,
       }
     }),
-    ...(entities?.hashtags as any[] || []).map<TextEntity>(ht => (
+    ...(entities?.hashtags || []).map<TextEntity>(ht => (
       {
         from: ht.indices[0],
         to: ht.indices[1],
         link: `https://twitter.com/hashtag/${ht.text}?src=hashtag_click`,
       }
     )),
-    ...(entities?.symbols as any[] || []).map<TextEntity>(symbol => (
+    ...(entities?.symbols || []).map<TextEntity>(symbol => (
       {
         from: symbol.indices[0],
         to: symbol.indices[1],
         link: `https://twitter.com/search?q=${encodeURIComponent(symbol.text)}&src=cashtag_click`,
       }
     )),
-    ...(entities?.user_mentions as any[] || []).map<TextEntity>(mention => (
+    ...(entities?.user_mentions || []).map<TextEntity>(mention => (
       {
         from: mention.indices[0],
         to: mention.indices[1],
@@ -74,7 +100,7 @@ function mapEntities(entities: any, removeIndicies?: [number, number][]) {
         },
       }
     )),
-    ...(entities?.media as any[] || []).map<TextEntity>(mention => (
+    ...(entities?.media || []).map<TextEntity>(mention => (
       {
         from: mention.indices[0],
         to: mention.indices[1],
@@ -182,9 +208,9 @@ const mapReaction = ({ sender_id: participantID, reaction_key, emoji_reaction }:
 const mapReactions = (reactions: any[]) =>
   reactions.map<MessageReaction>(mapReaction)
 
-function getSeen(threadParticipants: TwitterUser[] = [], msg: TwitterMessage): MessageSeen {
+function getSeen(threadParticipants: TwitterUser[], msg: TwitterMessage): MessageSeen {
   const result: { [userID: string]: Date } = {}
-  threadParticipants.forEach(({ user_id, last_read_event_id }) => {
+  threadParticipants?.forEach(({ user_id, last_read_event_id }) => {
     if (!last_read_event_id || msg.id > last_read_event_id) return
     result[user_id] = UNKNOWN_DATE
   })
@@ -275,10 +301,10 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
     mapped.senderID = msg.message_data.sender_id
     mapped.text = msg.message_data.text
     const { video, photo, tweet, animated_gif, fleet, card } = msg.message_data.attachment || {}
-    const removeIndicies = tweet?.indices
+    const removeIndices = tweet?.indices
     const entities = mapEntities(
       msg.message_data.entities,
-      mapped.text?.length === removeIndicies?.[1] ? removeIndicies : undefined, // hide tweet url only if no other text is present
+      mapped.text?.length === removeIndices?.[1] ? removeIndices : undefined, // hide tweet url only if no other text is present
     )
     if (entities?.length > 0) {
       mapped.textAttributes = {
