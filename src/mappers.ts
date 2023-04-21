@@ -373,7 +373,6 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
         }
         break
       case MessageType.PARTICIPANTS_LEAVE:
-        mapped.senderID = '$thread'
         mapped.text = `${participants.map(p => `{{${p.user_id}}}`).join(', ')} left`
         mapped.action = {
           type: MessageActionType.THREAD_PARTICIPANTS_REMOVED,
@@ -396,6 +395,7 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
     }
   }
   if (mapped.senderID != null) mapped.senderID = String(mapped.senderID)
+  else mapped.senderID = '$thread' // senderID is not optional. fallback to $thread
   mapped.isSender = mapped.senderID === String(currentUserID)
   return mapped
 }
