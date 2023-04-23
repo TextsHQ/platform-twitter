@@ -46,13 +46,13 @@ export default class Notifications {
             } else if (entry.content.item) {
               const { content } = entry.content.item
               if (content.tweet) {
-                messages.push(mapTweetNotification(json.globalObjects, entry, this.papi.currentUser.id_str))
+                messages.push(mapTweetNotification(json.globalObjects, entry, this.papi.currentUser.id))
                 this.messageTweetMap.set(id, entry.content.item.content.tweet.id)
               } else if (content.notification) {
                 const nEntry = json.globalObjects.notifications[content.notification.id]
                 const tweetID = nEntry.template?.aggregateUserActionsV1?.targetObjects[0]?.tweet.id
                 this.messageTweetMap.set(id, tweetID)
-                const m = mapNotification(json.globalObjects, id, content.notification, this.papi.currentUser.id_str)
+                const m = mapNotification(json.globalObjects, id, content.notification, this.papi.currentUser.id)
                 if (!this.papi.onlyMentionsInNotifThread) messages.push(m)
               }
             }
@@ -115,7 +115,7 @@ export default class Notifications {
     const thread: Thread = {
       id: NOTIFICATIONS_THREAD_ID,
       type: 'channel',
-      title: `Notifications for ${this.papi.currentUser.name}`,
+      title: `Notifications for ${this.papi.currentUser.fullName}`,
       description: 'This thread lists all your Twitter notifications. React to a message with ❤️ to like the tweet. To tweet, send a message starting with /tweet followed by your tweet text.',
       isReadOnly: false,
       isUnread: messages.items.some(m => m.extra.unread),

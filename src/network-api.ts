@@ -350,6 +350,12 @@ export default class TwitterAPI {
       },
     })
 
+  account_multi_list = () =>
+    this.fetch({
+      url: `${API_ENDPOINT}1.1/account/multi/list.json`,
+      referer: 'https://twitter.com/',
+    })
+
   account_verify_credentials = () =>
     this.fetch({
       url: `${API_ENDPOINT}1.1/account/verify_credentials.json`,

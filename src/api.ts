@@ -11,7 +11,6 @@ import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
 import Notifications from './notifications'
 import { TwitterError } from './errors'
-import type { TwitterUser } from './twitter-types'
 import type TwitterPlatformInfo from './info'
 
 const { Sentry } = texts
@@ -21,7 +20,7 @@ export default class Twitter implements PlatformAPI {
 
   private readonly live = new LivePipeline(this.api, this.onLiveEvent.bind(this))
 
-  currentUser: TwitterUser = null
+  currentUser: User = null
 
   userUpdatesCursor: string = null
 
@@ -52,7 +51,7 @@ export default class Twitter implements PlatformAPI {
 
   private processUserUpdates = (json: any) => {
     this.userUpdatesCursor = json.user_events?.cursor
-    const events = (json.user_events?.entries as any[])?.flatMap(entryObj => mapUserUpdate(entryObj, this.currentUser.id_str, json))
+    const events = (json.user_events?.entries as any[])?.flatMap(entryObj => mapUserUpdate(entryObj, this.currentUser.id, json))
     if (events?.length > 0) this.onServerEvent?.(events)
     this.lastSeenEventIds = pick(json.user_events, ['last_seen_event_id', 'trusted_last_seen_event_id', 'untrusted_last_seen_event_id'])
   }
@@ -147,15 +146,15 @@ export default class Twitter implements PlatformAPI {
   serializeSession = () => this.api.cookieJar.toJSON()
 
   private afterAuth = async () => {
-    const response = await this.api.account_verify_credentials()
-    this.currentUser = response
-    if (!response?.id_str) throw new Error('current user id not present')
+    const ml = await this.api.account_multi_list()
+    this.currentUser = await this.getUser({ username: ml.users[0].screen_name })
+    if (!this.currentUser) throw new Error('current user not present')
     if (this.sendNotificationsThread) {
       this.notifications = new Notifications(this, this.api)
     }
   }
 
-  getCurrentUser = () => mapUser(this.currentUser)
+  getCurrentUser = () => this.currentUser
 
   searchUsers = mem(async (typed: string) => {
     const { users } = await this.api.typeahead(typed) || {}
@@ -204,7 +203,7 @@ export default class Twitter implements PlatformAPI {
     const { conversation_timeline } = await this.api.dm_conversation_thread(threadID, cursor ? { [direction === 'before' ? 'max_id' : 'min_id']: cursor } : {})
     const entries = Object.values(conversation_timeline.entries || {})
     const thread = conversation_timeline.conversations[threadID]
-    const items = mapMessages(entries, thread, this.currentUser.id_str)
+    const items = mapMessages(entries, thread, this.currentUser.id)
     return {
       items,
       hasMore: conversation_timeline.status !== 'AT_END',
@@ -239,7 +238,7 @@ export default class Twitter implements PlatformAPI {
     if (userIDs.length === 1) {
       const [userID] = userIDs
       if (userID.startsWith('notifications_')) return
-      const threadID = `${this.currentUser.id_str}-${userID}`
+      const threadID = `${this.currentUser.id}-${userID}`
       return this.getThread(threadID)
     }
     const json = await this.api.dm_new({ text: messageText, recipientIDs: userIDs })
@@ -253,7 +252,7 @@ export default class Twitter implements PlatformAPI {
       type: ServerEventType.TOAST,
       toast: {
         text: 'Tweeted!',
-        buttons: [{ label: 'View tweet', linkURL: `https://twitter.com/${this.currentUser.screen_name}/status/${json.data.create_tweet.tweet_results.result.rest_id}` }],
+        buttons: [{ label: 'View tweet', linkURL: `https://twitter.com/${this.currentUser.username}/status/${json.data.create_tweet.tweet_results.result.rest_id}` }],
       },
     }])
     return true
@@ -350,7 +349,6 @@ export default class Twitter implements PlatformAPI {
     if ('folderName' in updates) {
       if (updates.folderName === InboxName.NORMAL) {
         await this.api.dm_conversation_accept(threadID)
-
       }
     }
   }
@@ -374,7 +372,7 @@ export default class Twitter implements PlatformAPI {
 
   removeParticipant = async (threadID: string, participantID: string) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Participants cannot be removed from the notifications thread')
-    if (participantID !== this.currentUser.id_str) return
+    if (participantID !== this.currentUser.id) return
     await this.deleteThread(threadID)
   }
 
@@ -395,7 +393,7 @@ export default class Twitter implements PlatformAPI {
         report_flow_id: uuid(),
         // 1270667971933794305-1324055140446441472 -> 1270667971933794305
         reported_user_id: threadID.includes('-') // single threads have a -
-          ? threadID.replace(this.currentUser.id_str, '').replace('-', '')
+          ? threadID.replace(this.currentUser.id, '').replace('-', '')
           : '0',
         reported_direct_message_conversation_id: threadID,
         initiated_in_app: '1',

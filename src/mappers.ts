@@ -9,7 +9,6 @@ import {
   MessageSeen,
   ServerEvent,
   Attachment,
-  CurrentUser,
   AttachmentType,
   MessageActionType,
   ServerEventType,
@@ -150,11 +149,11 @@ const MAP_THREAD_TYPE = {
   GROUP_DM: 'group',
 }
 
-export function mapThread(thread: TwitterThread, users: Record<string, TwitterUser> = {}, currentUserTw: TwitterUser): Thread {
+export function mapThread(thread: TwitterThread, users: Record<string, TwitterUser> = {}, currentUser: User): Thread {
   const twParticipants = thread.participants as TwitterUser[]
   const participants = orderBy(
     twParticipants.map(p => mapParticipant(users[p.user_id], p)).filter(Boolean),
-    u => u.id === currentUserTw.id_str,
+    u => u.id === currentUser.id,
   )
   const mapped: Thread = {
     _original: JSON.stringify(thread),
@@ -446,7 +445,7 @@ function groupMessages(entries: any[]) {
   return messages
 }
 
-export function mapThreads(json: any, currentUser: TwitterUser, inboxType?: string): [Thread[], Thread[]] {
+export function mapThreads(json: any, currentUser: User, inboxType?: string): [Thread[], Thread[]] {
   const otherThreads: Thread[] = []
   const threads: Thread[] = []
   if (!json) return [threads, otherThreads]
@@ -455,7 +454,7 @@ export function mapThreads(json: any, currentUser: TwitterUser, inboxType?: stri
   const groupedMessages = groupMessages(entries || [])
   const map = (t: any) => {
     const thread = mapThread(t, users, currentUser)
-    const messages = mapMessages(groupedMessages[t.conversation_id] || [], t, currentUser.id_str)
+    const messages = mapMessages(groupedMessages[t.conversation_id] || [], t, currentUser.id)
     const lastMessage = messages[messages.length - 1]
     return {
       ...thread,
