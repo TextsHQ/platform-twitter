@@ -201,7 +201,7 @@ export const REACTION_MAP_TO_TWITTER = {
 const mapReaction = ({ sender_id: participantID, reaction_key, emoji_reaction }: any) => ({
   id: participantID,
   participantID,
-  reactionKey: reaction_key === 'emoji' ? emoji_reaction : REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key,
+  reactionKey: reaction_key === 'emoji' ? emoji_reaction.toLowerCase() : REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key,
 })
 
 const mapReactions = (reactions: any[]) =>
@@ -405,7 +405,7 @@ function getReactionMessages(m: TwitterMessage, currentUserID: string) {
   return (msg.message_reactions as any[]).map<Message>(reaction => {
     const truncated = truncate(m.message_data?.text)
     const senderID = String(reaction.sender_id)
-    const reactionKey = reaction.reaction_key === 'emoji' ? reaction.emoji_reaction : REACTION_MAP_TO_NORMALIZED[reaction.reaction_key] || reaction.reaction_key
+    const reactionKey = reaction.reaction_key === 'emoji' ? reaction.emoji_reaction.toLowerCase() : REACTION_MAP_TO_NORMALIZED[reaction.reaction_key] || reaction.reaction_key
     const isSender = String(reaction.sender_id) === currentUserID
     return {
       _original: JSON.stringify(reaction),
