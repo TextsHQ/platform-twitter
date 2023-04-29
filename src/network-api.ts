@@ -297,10 +297,10 @@ export default class TwitterAPI {
     while (pi?.state === 'pending' || pi?.state === 'in_progress') {
       if ((Date.now() - start) > PROCESSING_TIMEOUT) throw Error('media processing taking longer than expected')
       const wait = pi.check_after_secs * 1000
-      if (IS_DEV) console.log(`waiting ${wait}ms for ${mediaID}`)
+      texts.log(`waiting ${wait}ms for ${mediaID}`)
       await setTimeoutAsync(wait)
       const statusResponse = await this.media_upload_status(referer, mediaID)
-      if (IS_DEV) console.log('media_upload_status', statusResponse)
+      texts.log('media_upload_status', statusResponse)
       pi = statusResponse.processing_info
     }
   }
@@ -309,7 +309,7 @@ export default class TwitterAPI {
     const totalBytes = buffer.length
     const referer = `https://twitter.com/messages/${threadID}`
     const initResponse = await this.media_upload_init(referer, totalBytes, mimeType)
-    if (IS_DEV) console.log('media_upload_init', { referer, totalBytes, mimeType }, initResponse)
+    texts.log('media_upload_init', { referer, totalBytes, mimeType }, initResponse)
     if (initResponse.error) throw Error(`media_upload_init error: ${initResponse.error}`)
     const { media_id_string: mediaID } = initResponse
     if (!mediaID) return
@@ -318,11 +318,13 @@ export default class TwitterAPI {
       const form = new FormData()
       form.append('media', chunk)
       checksum += chunk.length
-      await this.media_upload_append(referer, mediaID, form, chunkIndex)
+      const appendRes = await this.media_upload_append(referer, mediaID, form, chunkIndex)
+      texts.log('media_upload_append', chunk.length, appendRes)
+      if (appendRes.error) throw Error(`media_upload_append error: ${appendRes.error}`)
     }
     if (checksum !== buffer.length) throw Error(`assertion failed: ${checksum} !== ${buffer.length}`)
     const finalizeResponse = await this.media_upload_finalize(referer, mediaID)
-    if (IS_DEV) console.log('media_upload_finalize', finalizeResponse)
+    texts.log('media_upload_finalize', finalizeResponse)
     if (finalizeResponse.error) throw Error(`media_upload_finalize error: ${finalizeResponse.error}`)
     await this.waitForProcessing(finalizeResponse, mediaID, referer)
     return mediaID
