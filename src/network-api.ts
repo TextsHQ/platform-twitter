@@ -267,13 +267,14 @@ export default class TwitterAPI {
       referer,
     })
 
-  media_upload_finalize = (referer: string, mediaID: string) =>
+  media_upload_finalize = (referer: string, mediaID: string, original_md5: string) =>
     this.fetch({
       method: 'POST',
       url: `${UPLOAD_ENDPOINT}i/media/upload.json`,
       searchParams: {
         command: 'FINALIZE',
         media_id: mediaID,
+        original_md5,
       },
       referer,
     })
@@ -314,6 +315,7 @@ export default class TwitterAPI {
     const { media_id_string: mediaID } = initResponse
     if (!mediaID) return
     let checksum = 0
+    const md5 = crypto.createHash('md5').update(buffer).digest('hex')
     for (const [chunkIndex, chunk] of chunkBuffer(buffer, MAX_CHUNK_SIZE)) {
       const form = new FormData()
       form.append('media', chunk)
@@ -323,7 +325,7 @@ export default class TwitterAPI {
       if (appendRes.error) throw Error(`media_upload_append error: ${appendRes.error}`)
     }
     if (checksum !== buffer.length) throw Error(`assertion failed: ${checksum} !== ${buffer.length}`)
-    const finalizeResponse = await this.media_upload_finalize(referer, mediaID)
+    const finalizeResponse = await this.media_upload_finalize(referer, mediaID, md5)
     texts.log('media_upload_finalize', finalizeResponse)
     if (finalizeResponse.error) throw Error(`media_upload_finalize error: ${finalizeResponse.error}`)
     await this.waitForProcessing(finalizeResponse, mediaID, referer)
