@@ -322,7 +322,7 @@ export default class TwitterAPI {
       checksum += chunk.length
       const appendRes = await this.media_upload_append(referer, mediaID, form, chunkIndex)
       texts.log('media_upload_append', chunk.length, appendRes)
-      if (appendRes.error) throw Error(`media_upload_append error: ${appendRes.error}`)
+      if (appendRes?.error) throw Error(`media_upload_append error: ${appendRes.error}`)
     }
     if (checksum !== buffer.length) throw Error(`assertion failed: ${checksum} !== ${buffer.length}`)
     const finalizeResponse = await this.media_upload_finalize(referer, mediaID, md5)
