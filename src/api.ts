@@ -40,6 +40,8 @@ export default class Twitter implements PlatformAPI {
     untrusted_last_seen_event_id: 0,
   }
 
+  constructor(readonly accountID: string) {}
+
   init = async (cookieJarJSON: string, _: ClientContext, prefs: Record<keyof typeof TwitterPlatformInfo['prefs'], any>) => {
     this.sendNotificationsThread = prefs?.show_notifications_thread
     this.onlyMentionsInNotifThread = prefs?.show_only_mentions_in_notifications_thread
@@ -383,7 +385,7 @@ export default class Twitter implements PlatformAPI {
 
   reportThread = async (type: 'spam', threadID: string, firstMessageID: string) => {
     if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Notifications thread cannot be reported')
-    const result = await texts.openBrowserWindow({
+    const result = await texts.openBrowserWindow(this.accountID, {
       windowTitle: 'Report thread',
       url: 'https://twitter.com/i/safety/report_story?' + new URLSearchParams({
         client_location: encodeURIComponent('messages:thread:'),
