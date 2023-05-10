@@ -414,7 +414,7 @@ function getReactionMessages(m: TwitterMessage, currentUserID: string) {
       timestamp: new Date(+reaction.time),
       senderID,
       isSender,
-      text: `${isSender ? 'You' : '{{sender}}'} reacted with ${supportedReactions[reactionKey]?.render || reaction.reaction_key}${truncated ? `: ${truncated}` : ''}`,
+      text: `${isSender ? 'You' : '{{sender}}'} reacted with ${supportedReactions[reactionKey]?.render || reactionKey}${truncated ? `: ${truncated}` : ''}`,
       action: {
         type: MessageActionType.MESSAGE_REACTION_CREATED,
         messageID: m.id,
