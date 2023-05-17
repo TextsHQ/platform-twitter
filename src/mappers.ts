@@ -199,7 +199,6 @@ const REACTION_MAP_TO_NORMALIZED = {
 // }
 
 const mapReaction = ({ sender_id: participantID, reaction_key, emoji_reaction }: any) => {
-  console.log("mapReaction", { participantID, reaction_key, emoji_reaction })
   return ({
   id: participantID,
   participantID,
