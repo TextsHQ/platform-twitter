@@ -198,12 +198,11 @@ const REACTION_MAP_TO_NORMALIZED = {
 //   dislike: 'disagree',
 // }
 
-const mapReaction = ({ sender_id: participantID, reaction_key, emoji_reaction }: any) => {
-  return ({
+const mapReaction = ({ sender_id: participantID, reaction_key, emoji_reaction }: any) => ({
   id: participantID,
   participantID,
   reactionKey: reaction_key === 'emoji' ? emoji_reaction.toLowerCase() : REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key,
-})}
+})
 
 const mapReactions = (reactions: any[]) =>
   reactions.map<MessageReaction>(mapReaction)

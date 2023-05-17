@@ -525,16 +525,16 @@ export default class TwitterAPI {
 
   dm_reaction_new = (reactionKey: string, threadID: string, messageID: string) =>
     this.fetch({
-      method: "POST",
+      method: 'POST',
       url: `${API_ENDPOINT}1.1/dm/reaction/new.json`,
       referer: `https://twitter.com/messages/${threadID}`,
       form: {
         conversation_id: threadID,
         dm_id: messageID,
         emoji_reaction: reactionKey,
-        reaction_key: "emoji",
+        reaction_key: 'emoji',
       },
-    });
+    })
 
   dm_reaction_delete = (reactionKey: string, threadID: string, messageID: string) =>
     this.gqlMutation({
