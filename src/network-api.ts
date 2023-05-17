@@ -194,34 +194,30 @@ export default class TwitterAPI {
     }
   }
 
-  gqlMutation = async (variables: object, queryId: string, mutationName: string, fetchOptions: Partial<ReturnType<typeof this.fetch>> = {}, bodyExtras?: object) => {
-    return this.fetch({
-      method: 'POST',
-      url: `${GRAPHQL_ENDPOINT}${queryId}/${mutationName}`,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        variables: JSON.stringify(variables),
-        ...bodyExtras,
-        queryId,
-      }),
-      referer: 'https://twitter.com/',
-      ...fetchOptions,
-    })
-  }
+  gqlMutation = async (variables: object, queryId: string, mutationName: string, fetchOptions: Partial<ReturnType<typeof this.fetch>> = {}, bodyExtras?: object) => this.fetch({
+    method: 'POST',
+    url: `${GRAPHQL_ENDPOINT}${queryId}/${mutationName}`,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      variables: JSON.stringify(variables),
+      ...bodyExtras,
+      queryId,
+    }),
+    referer: 'https://twitter.com/',
+    ...fetchOptions,
+  })
 
-  gqlQuery = async (variables: object, queryId: string, queryName: string, fetchOptions: Partial<ReturnType<typeof this.fetch>> = {}) => {
-    return this.fetch({
-      method: 'GET',
-      url: `${GRAPHQL_ENDPOINT}${queryId}/${queryName}?variables=` + encodeURIComponent(JSON.stringify(variables)),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      referer: 'https://twitter.com/',
-      ...fetchOptions,
-    })
-  }
+  gqlQuery = async (variables: object, queryId: string, queryName: string, fetchOptions: Partial<ReturnType<typeof this.fetch>> = {}) => this.fetch({
+    method: 'GET',
+    url: `${GRAPHQL_ENDPOINT}${queryId}/${queryName}?variables=` + encodeURIComponent(JSON.stringify(variables)),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    referer: 'https://twitter.com/',
+    ...fetchOptions,
+  })
 
   authenticatedGet = async (url: string) => {
     if (!this.cookieJar) throw new Error('Not authorized')
@@ -424,7 +420,7 @@ export default class TwitterAPI {
       throw Error(
         response?.data?.create_dm?.dm_validation_failure_type
           ? response.data.create_dm.dm_validation_failure_type
-          : `unknown error ${JSON.stringify(response)}`
+          : `unknown error ${JSON.stringify(response)}`,
       )
     }
 
@@ -735,7 +731,7 @@ export default class TwitterAPI {
       referer: NOTIFICATIONS_URL,
     })
 
-  createTweet = (text: string, in_reply_to_tweet_id?: string) => this.gqlMutation( {
+  createTweet = (text: string, in_reply_to_tweet_id?: string) => this.gqlMutation({
     tweet_text: text,
     dark_request: false,
     media: { media_entities: [], possibly_sensitive: false },
