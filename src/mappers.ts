@@ -179,30 +179,32 @@ export function mapThread(thread: TwitterThread, users: Record<string, TwitterUs
 }
 
 const REACTION_MAP_TO_NORMALIZED = {
-  funny: 'laugh',
-  surprised: 'surprised',
-  sad: 'cry',
-  like: 'heart',
-  excited: 'fire',
-  agree: 'like',
-  disagree: 'dislike',
+  funny: '😂',
+  surprised: '😲',
+  sad: '😢',
+  like: '❤️',
+  excited: '🔥',
+  agree: '👍',
+  disagree: '👎',
 }
 
-export const REACTION_MAP_TO_TWITTER = {
-  laugh: 'funny',
-  surprised: 'surprised',
-  cry: 'sad',
-  heart: 'like',
-  fire: 'excited',
-  like: 'agree',
-  dislike: 'disagree',
-}
+// export const REACTION_MAP_TO_TWITTER = {
+//   laugh: 'funny',
+//   surprised: 'surprised',
+//   cry: 'sad',
+//   heart: 'like',
+//   fire: 'excited',
+//   like: 'agree',
+//   dislike: 'disagree',
+// }
 
-const mapReaction = ({ sender_id: participantID, reaction_key, emoji_reaction }: any) => ({
+const mapReaction = ({ sender_id: participantID, reaction_key, emoji_reaction }: any) => {
+  console.log("mapReaction", { participantID, reaction_key, emoji_reaction })
+  return ({
   id: participantID,
   participantID,
   reactionKey: reaction_key === 'emoji' ? emoji_reaction.toLowerCase() : REACTION_MAP_TO_NORMALIZED[reaction_key] || reaction_key,
-})
+})}
 
 const mapReactions = (reactions: any[]) =>
   reactions.map<MessageReaction>(mapReaction)
