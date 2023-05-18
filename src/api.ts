@@ -280,8 +280,12 @@ export default class Twitter implements PlatformAPI {
     return true
   }
 
-  private sendTextMessage = (threadID: string, text: string, { pendingMessageID }: MessageSendOptions) =>
-    this.api.dm_new({ text, threadID, generatedMsgID: pendingMessageID })
+  private sendTextMessage = (threadID: string, text: string, { pendingMessageID, quotedMessageID }: MessageSendOptions) => {
+    if (quotedMessageID) {
+      return this.api.dm_new_reply({ text, threadID, replyID: quotedMessageID })
+    }
+    return this.api.dm_new({ text, threadID, generatedMsgID: pendingMessageID })
+  }
 
   private sendFileFromBuffer = async (threadID: string, text: string, fileBuffer: Buffer, mimeType: string, { pendingMessageID }: MessageSendOptions) => {
     const mediaID = await this.api.upload(threadID, fileBuffer, mimeType)

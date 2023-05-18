@@ -44,6 +44,7 @@ const info: PlatformInfo = {
     Attribute.SUPPORTS_PUSH_NOTIFICATIONS,
     Attribute.CAN_FETCH_LINK_PREVIEW,
     Attribute.CAN_REMOVE_LINK_PREVIEW,
+    Attribute.SUPPORTS_QUOTED_MESSAGES,
   ]),
   attachments: {
     gifMimeType: 'image/gif',
