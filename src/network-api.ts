@@ -380,6 +380,22 @@ export default class TwitterAPI {
       referer: 'https://twitter.com/messages/compose',
     })
 
+  async dm_new_reply({ replyID, threadID, text }) {
+    const response = this.fetch({
+      method: 'POST',
+      url: `${API_ENDPOINT}1.1/dm/new2.json`,
+      referer: `https://twitter.com/messages/${threadID}`,
+      body: JSON.stringify({
+        conversation_id: threadID,
+        dm_users: 'true',
+        reply_to_dm_id: replyID,
+        request_id: uuid().toUpperCase(),
+        text,
+      }),
+    })
+    return response
+  }
+
   async dm_new({ text, threadID, recipientIDs, generatedMsgID, mediaID, includeLinkPreview = true }: {
     text: string
     threadID?: string
