@@ -380,67 +380,31 @@ export default class TwitterAPI {
       referer: 'https://twitter.com/messages/compose',
     })
 
-  async dm_new_reply({ replyID, threadID, text }) {
-    const response = this.fetch({
-      method: 'POST',
-      url: `${API_ENDPOINT}1.1/dm/new2.json`,
-      referer: `https://twitter.com/messages/${threadID}`,
-      body: JSON.stringify({
-        conversation_id: threadID,
-        dm_users: 'true',
-        reply_to_dm_id: replyID,
-        request_id: uuid().toUpperCase(),
-        text,
-      }),
-    })
-    return response
-  }
-
-  async dm_new({ text, threadID, recipientIDs, generatedMsgID, mediaID, includeLinkPreview = true }: {
+  dm_new2({ generatedMsgID, text, threadID, replyID, recipientIDs, mediaID, includeLinkPreview = true }: {
+    generatedMsgID?: string
     text: string
     threadID?: string
+    replyID?: string
     recipientIDs?: string[]
-    generatedMsgID?: string
     mediaID?: string
     includeLinkPreview?: boolean
   }) {
-    const target = recipientIDs ? { participant_ids: recipientIDs } : { conversation_id: threadID }
-    const variables: SendMessageVariables = {
-      message: {
-        text: null,
-        media: null,
-        tweet: null,
-        card: null,
-      },
-      requestId: (generatedMsgID || uuid()).toUpperCase(),
-      target,
+    const body = {
+      conversation_id: threadID,
+      media_id: mediaID,
+      recipient_ids: threadID ? 'false' : recipientIDs.join(','),
+      // dm_users: 'true',
+      reply_to_dm_id: replyID,
+      request_id: (generatedMsgID || uuid()).toUpperCase(),
+      ...(includeLinkPreview ? {} : { card_uri: 'tombstone://card' }),
+      text,
     }
-
-    if (mediaID) {
-      variables.message.media = {
-        id: mediaID,
-        text,
-      }
-    } else if (!includeLinkPreview) {
-      variables.message.card = {
-        uri: 'tombstone://card',
-        text,
-      }
-    } else {
-      variables.message.text = { text }
-    }
-
-    const response = await this.gqlMutation(variables, 'MaxK2PKX1F9Z-9SwqwavTw', 'useSendMessageMutation')
-
-    if (response?.data?.create_dm?.__typename !== 'CreateDmSuccess') {
-      throw Error(
-        response?.data?.create_dm?.dm_validation_failure_type
-          ? response.data.create_dm.dm_validation_failure_type
-          : `unknown error ${JSON.stringify(response)}`,
-      )
-    }
-
-    return response
+    return this.fetch({
+      method: 'POST',
+      url: `${API_ENDPOINT}1.1/dm/new2.json`,
+      referer: `https://twitter.com/messages/${threadID}`,
+      body: JSON.stringify(body),
+    })
   }
 
   dm_destroy = (threadID: string, messageID: string) =>

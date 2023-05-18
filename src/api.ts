@@ -5,7 +5,7 @@ import { randomUUID as uuid } from 'crypto'
 import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, User, NotificationsInfo, UserID, PhoneNumber, ThreadFolderName, LoginCreds, ClientContext } from '@textshq/platform-sdk'
 import { pick } from 'lodash'
 
-import { mapThreads, mapMessages, mapEvent, mapUser, mapUserUpdate, mapMessageLink } from './mappers'
+import { mapThreads, mapMessages, mapEvent, mapUser, mapUserUpdate, mapMessageLink, mapMessage } from './mappers'
 import TwitterAPI from './network-api'
 import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
@@ -243,9 +243,10 @@ export default class Twitter implements PlatformAPI {
       const threadID = `${this.currentUser.id}-${userID}`
       return this.getThread(threadID)
     }
-    const json = await this.api.dm_new({ text: messageText, recipientIDs: userIDs })
-    if (!json.data?.create_dm?.conversation_id) throw Error(`Missing conversation_id in ${JSON.stringify(json)}`)
-    return this.getThread(json.data.create_dm.conversation_id)
+    const json = await this.api.dm_new2({ text: messageText, recipientIDs: userIDs })
+    const { entries } = json
+    const threadID = (entries as any[]).find(e => e.conversation_create)?.conversation_create?.conversation_id
+    return this.getThread(threadID)
   }
 
   private tweet = async (text: string, inReplyToTweetID: string) => {
@@ -261,9 +262,10 @@ export default class Twitter implements PlatformAPI {
   }
 
   sendMessage = async (threadID: string, content: MessageContent, msgSendOptions: MessageSendOptions) => {
+    const { quotedMessageID, pendingMessageID } = msgSendOptions
     if (threadID === NOTIFICATIONS_THREAD_ID) {
       if (content.text?.startsWith('/tweet ')) {
-        const inReplyToTweetID = msgSendOptions?.quotedMessageID ? this.notifications.messageTweetMap.get(msgSendOptions.quotedMessageID) : undefined
+        const inReplyToTweetID = quotedMessageID ? this.notifications.messageTweetMap.get(quotedMessageID) : undefined
         return this.tweet(content.text.slice('/tweet '.length), inReplyToTweetID)
       }
       this.onServerEvent([{
@@ -273,24 +275,12 @@ export default class Twitter implements PlatformAPI {
       return false
     }
     const fileBuffer = content.filePath ? await fs.readFile(content.filePath) : content.fileBuffer
-    await (fileBuffer
-      ? this.sendFileFromBuffer(threadID, content.text, fileBuffer, content.mimeType, msgSendOptions)
-      : this.sendTextMessage(threadID, content.text, msgSendOptions))
-
-    return true
-  }
-
-  private sendTextMessage = (threadID: string, text: string, { pendingMessageID, quotedMessageID }: MessageSendOptions) => {
-    if (quotedMessageID) {
-      return this.api.dm_new_reply({ text, threadID, replyID: quotedMessageID })
-    }
-    return this.api.dm_new({ text, threadID, generatedMsgID: pendingMessageID })
-  }
-
-  private sendFileFromBuffer = async (threadID: string, text: string, fileBuffer: Buffer, mimeType: string, { pendingMessageID }: MessageSendOptions) => {
-    const mediaID = await this.api.upload(threadID, fileBuffer, mimeType)
-    if (!mediaID) throw Error('invalid mediaID')
-    return this.api.dm_new({ text: text || '', threadID, generatedMsgID: pendingMessageID, mediaID })
+    const mediaID = fileBuffer
+      ? await this.api.upload(threadID, fileBuffer, content.mimeType)
+      : undefined
+    const json = await this.api.dm_new2({ text: content.text, threadID, replyID: quotedMessageID, generatedMsgID: pendingMessageID, mediaID })
+    const mapped = (json.entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id, undefined))
+    return mapped
   }
 
   sendActivityIndicator = async (type: ActivityType, threadID: string) => {
