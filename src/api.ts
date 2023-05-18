@@ -311,12 +311,12 @@ export default class Twitter implements PlatformAPI {
   addReaction = (threadID: string, messageID: string, reactionKey: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
       ? this.notifications.addReaction(messageID, reactionKey)
-      : this.api.dm_reaction_new(reactionKey, threadID, messageID))
+      : this.api.dm_reaction(reactionKey, threadID, messageID, 'new'))
 
   removeReaction = (threadID: string, messageID: string, reactionKey: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
       ? this.notifications.removeReaction(messageID, reactionKey)
-      : this.api.dm_reaction_delete(reactionKey, threadID, messageID))
+      : this.api.dm_reaction(reactionKey, threadID, messageID, 'delete'))
 
   sendReadReceipt = (threadID: string, messageID: string, messageCursor: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
