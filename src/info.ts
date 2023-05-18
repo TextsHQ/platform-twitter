@@ -14,6 +14,7 @@ const info: PlatformInfo = {
   loginMode: 'browser',
   reactions: {
     supported: supportedReactions,
+    canReactWithAllEmojis: true,
   },
   deletionMode: MessageDeletionMode.DELETE_FOR_SELF,
   browserLogin: {

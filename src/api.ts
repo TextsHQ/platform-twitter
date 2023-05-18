@@ -5,7 +5,7 @@ import { randomUUID as uuid } from 'crypto'
 import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, User, NotificationsInfo, UserID, PhoneNumber, ThreadFolderName, LoginCreds, ClientContext } from '@textshq/platform-sdk'
 import { pick } from 'lodash'
 
-import { mapThreads, mapMessages, mapEvent, mapUser, REACTION_MAP_TO_TWITTER, mapUserUpdate, mapMessageLink } from './mappers'
+import { mapThreads, mapMessages, mapEvent, mapUser, mapUserUpdate, mapMessageLink } from './mappers'
 import TwitterAPI from './network-api'
 import LivePipeline from './LivePipeline'
 import { NOTIFICATIONS_THREAD_ID } from './constants'
@@ -311,12 +311,12 @@ export default class Twitter implements PlatformAPI {
   addReaction = (threadID: string, messageID: string, reactionKey: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
       ? this.notifications.addReaction(messageID, reactionKey)
-      : this.api.dm_reaction_new(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID))
+      : this.api.dm_reaction(reactionKey, threadID, messageID, 'new'))
 
   removeReaction = (threadID: string, messageID: string, reactionKey: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID
       ? this.notifications.removeReaction(messageID, reactionKey)
-      : this.api.dm_reaction_delete(REACTION_MAP_TO_TWITTER[reactionKey], threadID, messageID))
+      : this.api.dm_reaction(reactionKey, threadID, messageID, 'delete'))
 
   sendReadReceipt = (threadID: string, messageID: string, messageCursor: string) =>
     (threadID === NOTIFICATIONS_THREAD_ID

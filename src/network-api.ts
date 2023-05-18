@@ -523,19 +523,18 @@ export default class TwitterAPI {
       },
     })
 
-  dm_reaction_new = (reactionKey: string, threadID: string, messageID: string) =>
-    this.gqlMutation({
-      conversationId: threadID,
-      messageId: messageID,
-      reactionTypes: [normalizeReaction(reactionKey)],
-    }, 'VvqwjKXjT6j6CTqvlqdYCw', 'useDMReactionMutationAddMutation')
-
-  dm_reaction_delete = (reactionKey: string, threadID: string, messageID: string) =>
-    this.gqlMutation({
-      conversationId: threadID,
-      messageId: messageID,
-      reactionTypes: [normalizeReaction(reactionKey)],
-    }, '-vqtYGrnU8xx1d_9tVE0lw', 'useDMReactionMutationRemoveMutation')
+  dm_reaction = (reactionKey: string, threadID: string, messageID: string, action: 'new' | 'delete') =>
+    this.fetch({
+      method: 'POST',
+      url: `${API_ENDPOINT}1.1/dm/reaction/${action}.json`,
+      referer: `https://twitter.com/messages/${threadID}`,
+      form: {
+        conversation_id: threadID,
+        dm_id: messageID,
+        emoji_reaction: reactionKey,
+        reaction_key: 'emoji',
+      },
+    })
 
   dm_conversation_mark_read = (threadID: string, messageID: string) =>
     this.fetch({
