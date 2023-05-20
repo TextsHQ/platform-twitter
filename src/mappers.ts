@@ -274,7 +274,7 @@ function mapTweet(tweet: any, user = tweet.user): Tweet {
       entities: tweetEntities,
       heDecode: true,
     }
-  } else {
+  } else if (messageTweet.text) {
     messageTweet.text = he.decode(messageTweet.text)
   }
   return messageTweet
@@ -311,7 +311,7 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
         entities,
         heDecode: true,
       }
-    } else {
+    } else if (mapped.text) {
       mapped.text = he.decode(mapped.text)
     }
     if (card) {
@@ -392,6 +392,7 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
         break
       case 'conversation_create':
         return null
+      default:
     }
   }
   if (mapped.senderID != null) mapped.senderID = String(mapped.senderID)
