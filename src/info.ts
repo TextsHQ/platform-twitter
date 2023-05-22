@@ -25,6 +25,15 @@ const info: PlatformInfo = {
       const ss = document.createElement('style')
       ss.innerText = '[aria-label="Close"]{display:none!important}'
       document.head.appendChild(ss)
+
+      // check webkit?.messageHandlers to detect WKWebView
+      if (window.location.href.endsWith('/login') && window.webkit?.messageHandlers !== undefined) {
+        const observer = new MutationObserver(() => {
+            document.querySelector('[data-testid="google_sign_in_container"]')?.remove()
+        })
+        const container = document.documentElement || document.body
+        observer.observe(container, { childList: true, subtree: true })
+      }
     `,
   },
   typingDurationMs: 3000,
