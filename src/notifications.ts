@@ -128,13 +128,13 @@ export default class Notifications {
   }
 
   addReaction(messageID: string, reactionKey: string) {
-    if (reactionKey !== 'heart') throw Error('invalid reactionKey')
+    if (reactionKey !== '❤️') throw Error('invalid reactionKey')
     const tweetID = this.messageTweetMap.get(messageID)
     if (tweetID) return this.api.favoriteTweet(tweetID)
   }
 
   removeReaction(messageID: string, reactionKey: string) {
-    if (reactionKey !== 'heart') throw Error('invalid reactionKey')
+    if (reactionKey !== '❤️') throw Error('invalid reactionKey')
     const tweetID = this.messageTweetMap.get(messageID)
     if (tweetID) return this.api.unfavoriteTweet(tweetID)
   }

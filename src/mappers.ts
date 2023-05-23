@@ -748,7 +748,7 @@ export function mapNotification(globalObjects: GlobalObjects, id: string, notifi
     senderID: `notifications_${entry.icon.id.split('_')?.[0]}`,
     isSender: false,
     tweets: tweet ? [mapTweet(tweet, globalObjects.users[tweet.user_id_str])] : undefined,
-    reactions: tweet?.favorited ? [{ id: currentUserID, participantID: currentUserID, reactionKey: 'heart' }] : undefined,
+    reactions: tweet?.favorited ? [{ id: currentUserID, participantID: currentUserID, reactionKey: '❤️' }] : undefined,
   }
 }
 export function mapTweetNotification(globalObjects: GlobalObjects, entry: any, currentUserID: string): Message {
@@ -760,7 +760,7 @@ export function mapTweetNotification(globalObjects: GlobalObjects, entry: any, c
     senderID: 'notifications_bird',
     timestamp,
     tweets: tweet ? [mapTweet(tweet, globalObjects.users[tweet.user_id_str])] : undefined,
-    reactions: tweet?.favorited ? [{ id: currentUserID, participantID: currentUserID, reactionKey: 'heart' }] : undefined,
+    reactions: tweet?.favorited ? [{ id: currentUserID, participantID: currentUserID, reactionKey: '❤️' }] : undefined,
     // buttons: [
     //   { label: 'Reply', linkURL: 'texts://' },
     // ],
