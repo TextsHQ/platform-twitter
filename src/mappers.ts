@@ -121,7 +121,7 @@ export function mapUser(user: TwitterUser): User {
     social: {
       followers: { count: user.followers_count },
       followingUsers: { count: user.friends_count },
-      website: user.url,
+      website: user.entities?.url?.urls?.[0]?.expanded_url ?? user.url,
       location: user.location,
       bio: {
         text: user.description,
