@@ -254,7 +254,7 @@ function mapTweet(tweet: any, user = tweet.user): Tweet {
   const tweetEntities = mapEntities(tweet.entities)
   const messageTweet: Tweet = {
     id: tweet.id_str,
-    text: tweet.full_text + (tweet.card?.name.startsWith('poll') ? '\n\n[Poll]' : ''),
+    text: (tweet.full_text ?? tweet.text) + (tweet.card?.name.startsWith('poll') ? '\n\n[Poll]' : ''),
     timestamp: new Date(tweet.created_at),
     user: {
       name: user.name,
