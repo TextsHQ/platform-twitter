@@ -221,6 +221,7 @@ const getVideo = (video: any): Attachment => ({
   type: video.audio_only ? AttachmentType.AUDIO : AttachmentType.VIDEO,
   srcURL: maxBy((video.video_info.variants as any[]).filter(v => v.content_type === 'video/mp4'), 'bitrate')?.url,
   size: pick(video.original_info, ['width', 'height']),
+  isVoiceNote: video.audio_only ? true : null,
 })
 const getDynamicPhoto = (photo: any): Attachment => ({
   id: photo.id_str,
