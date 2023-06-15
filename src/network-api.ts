@@ -4,13 +4,12 @@ import { CookieJar, Cookie } from 'tough-cookie'
 import FormData from 'form-data'
 import { setTimeout as setTimeoutAsync } from 'timers/promises'
 import util from 'util'
-import { texts, ReAuthError, FetchOptions } from '@textshq/platform-sdk'
+import { texts, ReAuthError, FetchOptions, RateLimitError } from '@textshq/platform-sdk'
 
 import { TwitterError } from './errors'
 import { chunkBuffer } from './util'
-import type { SendMessageVariables } from './twitter-types'
 
-const { constants, IS_DEV, Sentry } = texts
+const { constants, Sentry } = texts
 const { USER_AGENT } = constants
 
 const randomBytes = util.promisify(crypto.randomBytes)
@@ -169,9 +168,7 @@ export default class TwitterAPI {
       const res = await this.httpClient.requestAsString(options.url, options)
       if (!res.body) return
       const json = JSON.parse(res.body)
-      // if (res.statusCode === 429) {
-      //   throw new RateLimitError()
-      // }
+      if (res.statusCode === 429) throw new RateLimitError()
       if (json.errors) {
         if (retryNumber < MAX_RETRY_COUNT && json.errors[0]?.code === TwitterError.OverCapacity) {
           texts.log('[tw] retrying bc over capacity', { retryNumber }, options.url)
