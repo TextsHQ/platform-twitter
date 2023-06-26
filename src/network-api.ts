@@ -166,9 +166,12 @@ export default class TwitterAPI {
 
     try {
       const res = await this.httpClient.requestAsString(options.url, options)
-      if (!res.body) return
-      const json = JSON.parse(res.body)
       if (res.statusCode === 429) throw new RateLimitError()
+      if (!res.body) {
+        if (res.statusCode === 204) return
+        throw Error('falsey body')
+      }
+      const json = JSON.parse(res.body)
       if (json.errors) {
         if (retryNumber < MAX_RETRY_COUNT && json.errors[0]?.code === TwitterError.OverCapacity) {
           texts.log('[tw] retrying bc over capacity', { retryNumber }, options.url)
