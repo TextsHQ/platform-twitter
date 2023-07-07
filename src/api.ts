@@ -65,7 +65,7 @@ export default class Twitter implements PlatformAPI {
   private pollUserUpdates = async () => {
     clearTimeout(this.pollTimeout)
     if (this.disposed) return
-    let nextFetchTimeoutMs = 8_000
+    let nextFetchTimeoutMs = 5_000
     if (this.userUpdatesCursor) {
       try {
         const { json, headers } = await this.api.dm_user_updates(this.userUpdatesCursor) || {}
