@@ -88,9 +88,8 @@ const CT0_MAX_AGE = 6 * 60 * 60
 const SENTRY_IGNORED_ERRORS = [TwitterError.OverCapacity, TwitterError.SessionNotFound, TwitterError.RateLimitExceeded]
 
 function handleErrors(url: string, statusCode: number, json: any) {
-  // { errors: [ { code: 32, message: 'Could not authenticate you.' } ] }
   const errors = json.errors as { code: number, message: string }[]
-  const loggedOutError = errors.find(e => e.code === TwitterError.InvalidCredentials || e.code === TwitterError.LoggedOut)
+  const loggedOutError = errors.find(e => e.code === TwitterError.LoggedOut)
   if (loggedOutError) {
     throw new ReAuthError(loggedOutError!.message)
     // todo track reauth event
