@@ -278,7 +278,8 @@ export default class Twitter implements PlatformAPI {
     const mediaID = fileBuffer
       ? await this.api.upload(threadID, fileBuffer, content.mimeType)
       : undefined
-    const json = await this.api.dm_new2({ text: content.text, threadID, replyID: quotedMessageID, generatedMsgID: pendingMessageID, mediaID })
+    const includeLinkPreview = content.links?.length > 0 ? content.links.every(l => l.includePreview) : undefined
+    const json = await this.api.dm_new2({ text: content.text, threadID, replyID: quotedMessageID, generatedMsgID: pendingMessageID, mediaID, includeLinkPreview })
     const mapped = (json.entries as any[])?.map(entry => mapMessage(entry, this.currentUser.id, undefined))
     return mapped
   }
