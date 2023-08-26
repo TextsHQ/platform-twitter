@@ -29,11 +29,11 @@ const commonHeaders = {
 const staticFetchHeaders = {
   Authorization: AUTHORIZATION,
   Accept: '*/*',
-  'x-twitter-active-user': 'yes',
-  'x-twitter-auth-type': 'OAuth2Session',
-  'x-twitter-client-language': 'en',
-  'sec-ch-ua': '"Chromium";v="105", "Google Chrome";v="105", "Not;A=Brand";v="99"',
-  'sec-ch-ua-mobile': '?0',
+  'X-Twitter-Active-User': 'yes',
+  'X-Twitter-Auth-Type': 'OAuth2Session',
+  'X-Twitter-Client-Language': 'en',
+  'Sec-Ch-Ua': '"Chromium";v="105", "Google Chrome";v="105", "Not;A=Brand";v="99"',
+  'Sec-Ch-Ua-Mobile': '?0',
 }
 
 const commonParams = {
@@ -193,30 +193,32 @@ export default class TwitterAPI {
     }
   }
 
-  gqlMutation = async (variables: object, queryId: string, mutationName: string, fetchOptions: Partial<ReturnType<typeof this.fetch>> = {}, bodyExtras?: object) => this.fetch({
-    method: 'POST',
-    url: `${GRAPHQL_ENDPOINT}${queryId}/${mutationName}`,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      variables: JSON.stringify(variables),
-      ...bodyExtras,
-      queryId,
-    }),
-    referer: 'https://twitter.com/',
-    ...fetchOptions,
-  })
+  private readonly gqlMutation = async (variables: object, queryId: string, mutationName: string, fetchOptions: Partial<ReturnType<typeof this.fetch>> = {}, bodyExtras?: object) =>
+    this.fetch({
+      method: 'POST',
+      url: `${GRAPHQL_ENDPOINT}${queryId}/${mutationName}`,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        variables: JSON.stringify(variables),
+        ...bodyExtras,
+        queryId,
+      }),
+      referer: 'https://twitter.com/',
+      ...fetchOptions,
+    })
 
-  gqlQuery = async (variables: object, queryId: string, queryName: string, fetchOptions: Partial<ReturnType<typeof this.fetch>> = {}) => this.fetch({
-    method: 'GET',
-    url: `${GRAPHQL_ENDPOINT}${queryId}/${queryName}?variables=` + encodeURIComponent(JSON.stringify(variables)),
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    referer: 'https://twitter.com/',
-    ...fetchOptions,
-  })
+  private readonly gqlQuery = async (variables: object, queryId: string, queryName: string, fetchOptions: Partial<ReturnType<typeof this.fetch>> = {}, extraSearchParams: object = {}) =>
+    this.fetch({
+      method: 'GET',
+      url: `${GRAPHQL_ENDPOINT}${queryId}/${queryName}?` + new URLSearchParams({ variables: JSON.stringify(variables), ...extraSearchParams }).toString(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      referer: 'https://twitter.com/',
+      ...fetchOptions,
+    })
 
   authenticatedGet = async (url: string) => {
     if (!this.cookieJar) throw new Error('Not authorized')
@@ -740,12 +742,25 @@ export default class TwitterAPI {
   userByScreenName = (screen_name: string) => this.gqlQuery({
     screen_name,
     withSafetyModeUserFields: true,
-    withSuperFollowsUserFields: true,
-  }, '7mjxD3-C6BxitPMVQ6w0-Q', 'UserByScreenName', {
+  }, 'G3KGOASz96M-Qu0nwmGXNg', 'UserByScreenName', {
     referer: `https://twitter.com/${screen_name}`,
+  }, {
+    features: JSON.stringify({
+      hidden_profile_likes_enabled: false,
+      hidden_profile_subscriptions_enabled: true,
+      responsive_web_graphql_exclude_directive_enabled: true,
+      verified_phone_label_enabled: false,
+      subscriptions_verification_info_is_identity_verified_enabled: false,
+      subscriptions_verification_info_verified_since_enabled: true,
+      highlights_tweets_tab_ui_enabled: true,
+      creator_subscriptions_tweet_preview_api_enabled: true,
+      responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
+      responsive_web_graphql_timeline_navigation_enabled: true,
+    }),
+    fieldToggles: JSON.stringify({ withAuxiliaryUserLabels: false }),
   })
 
-  private getPushDeviceInfo = (endpoint: string, p256dh: string, auth: string) => {
+  private readonly getPushDeviceInfo = (endpoint: string, p256dh: string, auth: string) => {
     const deviceId = 'Mac/Chrome' // can be Mac/Firefox, Mac/Safari, Mac/Other Browser, Other OS/Other Browser
     return {
       // checksum is optional? "templateChecksum"?
