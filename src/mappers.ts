@@ -351,6 +351,9 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
     const participants = msg.participants as any[]
     switch (type) {
       case MessageType.JOIN_CONVERSATION:
+        mapped.senderID = msg.sender_id
+        mapped.text = `{{sender}} added {{${currentUserID}}}`
+        break
       case MessageType.PARTICIPANTS_JOIN:
         mapped.senderID = msg.sender_id
         mapped.text = `{{sender}} added ${participants.map(p => p.user_id).filter(u => u !== mapped.senderID).map(u => `{{${u}}}`).join(', ')}`
@@ -686,6 +689,8 @@ export function mapUserUpdate(entryObj: any, currentUserID: string, json: any): 
         },
         entries: [String(entry.sender_id)],
       }
+
+    default:
   }
   texts.log(entryType, entry)
   texts.Sentry.captureMessage('unknown twitter entry: ' + entryType)
