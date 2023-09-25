@@ -3,6 +3,7 @@ import EventSource from 'eventsource'
 import { CookieJar, Cookie } from 'tough-cookie'
 import FormData from 'form-data'
 import { setTimeout as setTimeoutAsync } from 'timers/promises'
+import { v4 as uuidv4 } from 'uuid'
 import util from 'util'
 import { texts, ReAuthError, FetchOptions, RateLimitError } from '@textshq/platform-sdk'
 
@@ -24,6 +25,7 @@ const commonHeaders = {
   'Sec-Fetch-Mode': 'cors',
   'Sec-Fetch-Site': 'same-site',
   'User-Agent': USER_AGENT,
+  'X-Client-Uuid': uuidv4(),
 }
 
 const staticFetchHeaders = {
