@@ -15,6 +15,11 @@ import type TwitterPlatformInfo from './info'
 
 const { Sentry } = texts
 
+type SerializedSession = {
+  cookieJarJSON?: string
+  xClientUuid?: string
+}
+
 export default class Twitter implements PlatformAPI {
   private readonly api = new TwitterAPI()
 
@@ -42,10 +47,14 @@ export default class Twitter implements PlatformAPI {
 
   constructor(readonly accountID: string) {}
 
-  init = async (cookieJarJSON: string, _: ClientContext, prefs: Record<keyof typeof TwitterPlatformInfo['prefs'], any>) => {
+  init = async (session: SerializedSession, _context: ClientContext, prefs: Record<keyof typeof TwitterPlatformInfo['prefs'], any>) => {
     this.sendNotificationsThread = prefs?.show_notifications_thread
     this.onlyMentionsInNotifThread = prefs?.show_only_mentions_in_notifications_thread
-    if (!cookieJarJSON) return
+
+    if (!session) return
+
+    const { cookieJarJSON, xClientUuid } = session
+    this.api.setXClientUuid(xClientUuid)
     const cookieJar = CookieJar.fromJSON(cookieJarJSON)
     await this.api.setLoginState(cookieJar)
     await this.afterAuth()
@@ -139,13 +148,20 @@ export default class Twitter implements PlatformAPI {
     const cookieJarJSON = 'cookieJarJSON' in creds && creds.cookieJarJSON
     if (!cookieJarJSON) return { type: 'error', errorMessage: 'Cookies not found' }
     await this.api.setLoginState(CookieJar.fromJSON(cookieJarJSON as any))
+    this.api.setXClientUuid(uuid())
     await this.afterAuth()
     return { type: 'success' }
   }
 
-  logout = () => this.api.account_logout()
+  logout = () => {
+    this.api.account_logout()
+    this.api.setXClientUuid(null)
+  }
 
-  serializeSession = () => this.api.cookieJar.toJSON()
+  serializeSession = (): SerializedSession => ({
+    cookieJarJSON: this.api.cookieJar.toJSON() as unknown as string,
+    xClientUuid: this.api.xClientUuid,
+  })
 
   private afterAuth = async () => {
     const ml = await this.api.account_multi_list()

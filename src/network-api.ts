@@ -3,7 +3,6 @@ import EventSource from 'eventsource'
 import { CookieJar, Cookie } from 'tough-cookie'
 import FormData from 'form-data'
 import { setTimeout as setTimeoutAsync } from 'timers/promises'
-import { v4 as uuidv4 } from 'uuid'
 import util from 'util'
 import { texts, ReAuthError, FetchOptions, RateLimitError } from '@textshq/platform-sdk'
 
@@ -25,7 +24,6 @@ const commonHeaders = {
   'Sec-Fetch-Mode': 'cors',
   'Sec-Fetch-Site': 'same-site',
   'User-Agent': USER_AGENT,
-  'X-Client-Uuid': uuidv4(),
 }
 
 const staticFetchHeaders = {
@@ -123,6 +121,8 @@ function normalizeReaction(reaction: string) {
 export default class TwitterAPI {
   private csrfToken = ''
 
+  xClientUuid?: string
+
   cookieJar: CookieJar = null
 
   httpClient = texts.createHttpClient()
@@ -137,6 +137,10 @@ export default class TwitterAPI {
       const cookie = new Cookie({ key: 'ct0', value: this.csrfToken, secure: true, hostOnly: false, domain: 'twitter.com', maxAge: CT0_MAX_AGE })
       this.cookieJar.setCookie(cookie, 'https://twitter.com/')
     }
+  }
+
+  setXClientUuid = (xClientUuid?: string) => {
+    this.xClientUuid = xClientUuid
   }
 
   setLoginState = async (cookieJar: CookieJar) => {
@@ -157,6 +161,7 @@ export default class TwitterAPI {
 
     options.headers = {
       'x-csrf-token': this.csrfToken,
+      'x-client-uuid': this.xClientUuid,
       ...staticFetchHeaders,
       Referer: options.referer,
       ...commonHeaders,
@@ -365,12 +370,15 @@ export default class TwitterAPI {
       referer: 'https://twitter.com/',
     })
 
-  account_logout = () =>
+  account_logout = () =>{
     this.fetch({
       method: 'POST',
       url: `${API_ENDPOINT}1.1/account/logout.json`,
       referer: 'https://twitter.com/logout',
     })
+
+    this.setXClientUuid(null)
+  }
 
   typeahead = (q: string) =>
     this.fetch({
