@@ -54,7 +54,7 @@ export default class Twitter implements PlatformAPI {
     if (!session) return
 
     const { cookieJarJSON, xClientUuid } = session
-    this.api.setXClientUuid(xClientUuid)
+    this.api.xClientUuid = xClientUuid
     const cookieJar = CookieJar.fromJSON(cookieJarJSON)
     await this.api.setLoginState(cookieJar)
     await this.afterAuth()
@@ -148,7 +148,7 @@ export default class Twitter implements PlatformAPI {
     const cookieJarJSON = 'cookieJarJSON' in creds && creds.cookieJarJSON
     if (!cookieJarJSON) return { type: 'error', errorMessage: 'Cookies not found' }
     await this.api.setLoginState(CookieJar.fromJSON(cookieJarJSON as any))
-    this.api.setXClientUuid(uuid())
+    this.api.xClientUuid = uuid()
     await this.afterAuth()
     return { type: 'success' }
   }

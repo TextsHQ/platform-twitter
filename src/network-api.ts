@@ -139,10 +139,6 @@ export default class TwitterAPI {
     }
   }
 
-  setXClientUuid = (xClientUuid?: string) => {
-    this.xClientUuid = xClientUuid
-  }
-
   setLoginState = async (cookieJar: CookieJar) => {
     if (!cookieJar) throw TypeError()
     this.cookieJar = cookieJar
