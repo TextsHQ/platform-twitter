@@ -153,10 +153,7 @@ export default class Twitter implements PlatformAPI {
     return { type: 'success' }
   }
 
-  logout = () => {
-    this.api.account_logout()
-    this.api.setXClientUuid(null)
-  }
+  logout = () => this.api.account_logout()
 
   serializeSession = (): SerializedSession => ({
     cookieJarJSON: this.api.cookieJar.toJSON() as unknown as string,

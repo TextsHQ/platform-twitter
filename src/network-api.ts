@@ -370,15 +370,12 @@ export default class TwitterAPI {
       referer: 'https://twitter.com/',
     })
 
-  account_logout = () => {
+  account_logout = () =>
     this.fetch({
       method: 'POST',
       url: `${API_ENDPOINT}1.1/account/logout.json`,
       referer: 'https://twitter.com/logout',
     })
-
-    this.setXClientUuid(null)
-  }
 
   typeahead = (q: string) =>
     this.fetch({
