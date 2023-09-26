@@ -17,7 +17,7 @@ const { Sentry } = texts
 
 type SerializedSession = {
   cookieJarJSON?: string
-  xClientUuid?: string
+  clientUUID?: string
 }
 
 export default class Twitter implements PlatformAPI {
@@ -53,8 +53,8 @@ export default class Twitter implements PlatformAPI {
 
     if (!session) return
 
-    const { cookieJarJSON, xClientUuid } = session
-    this.api.xClientUuid = xClientUuid
+    const { cookieJarJSON, clientUUID } = session
+    this.api.clientUUID = clientUUID
     const cookieJar = CookieJar.fromJSON(cookieJarJSON)
     await this.api.setLoginState(cookieJar)
     await this.afterAuth()
@@ -148,7 +148,7 @@ export default class Twitter implements PlatformAPI {
     const cookieJarJSON = 'cookieJarJSON' in creds && creds.cookieJarJSON
     if (!cookieJarJSON) return { type: 'error', errorMessage: 'Cookies not found' }
     await this.api.setLoginState(CookieJar.fromJSON(cookieJarJSON as any))
-    this.api.xClientUuid = uuid()
+    this.api.clientUUID = uuid()
     await this.afterAuth()
     return { type: 'success' }
   }
@@ -157,7 +157,7 @@ export default class Twitter implements PlatformAPI {
 
   serializeSession = (): SerializedSession => ({
     cookieJarJSON: this.api.cookieJar.toJSON() as unknown as string,
-    xClientUuid: this.api.xClientUuid,
+    clientUUID: this.api.clientUUID,
   })
 
   private afterAuth = async () => {

@@ -121,7 +121,7 @@ function normalizeReaction(reaction: string) {
 export default class TwitterAPI {
   private csrfToken = ''
 
-  xClientUuid?: string
+  clientUUID?: string
 
   cookieJar: CookieJar = null
 
@@ -157,7 +157,7 @@ export default class TwitterAPI {
 
     options.headers = {
       'x-csrf-token': this.csrfToken,
-      'x-client-uuid': this.xClientUuid,
+      'x-client-uuid': this.clientUUID,
       ...staticFetchHeaders,
       Referer: options.referer,
       ...commonHeaders,
