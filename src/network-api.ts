@@ -121,6 +121,8 @@ function normalizeReaction(reaction: string) {
 export default class TwitterAPI {
   private csrfToken = ''
 
+  clientUUID?: string
+
   cookieJar: CookieJar = null
 
   httpClient = texts.createHttpClient()
@@ -155,6 +157,7 @@ export default class TwitterAPI {
 
     options.headers = {
       'x-csrf-token': this.csrfToken,
+      'x-client-uuid': this.clientUUID,
       ...staticFetchHeaders,
       Referer: options.referer,
       ...commonHeaders,
