@@ -536,7 +536,7 @@ export default class TwitterAPI {
       conversationId: threadID,
     }, 'HL96-xZ3Y81IEzAdczDokg', 'useTypingNotifierMutation')
     if (response?.data?.post_typing_indicator?.__typename === 'TypingIndicatorSuccess') return true
-    throw new Error(`[tw] dm_conversation_typing failed: ${JSON.stringify(response)}`)
+    // throw new Error(`[tw] dm_conversation_typing failed: ${JSON.stringify(response)}`)
   }
 
   dm_conversation_delete = (threadID: string) =>
