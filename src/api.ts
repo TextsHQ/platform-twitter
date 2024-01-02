@@ -279,7 +279,7 @@ export default class Twitter implements PlatformAPI {
       type: ServerEventType.TOAST,
       toast: {
         text: 'Tweeted!',
-        buttons: [{ label: 'View tweet', linkURL: `https://twitter.com/${this.currentUser.username}/status/${json.data.create_tweet.tweet_results.result.rest_id}` }],
+        buttons: [{ label: 'View tweet', linkURL: `https://x.com/${this.currentUser.username}/status/${json.data.create_tweet.tweet_results.result.rest_id}` }],
       },
     }])
     return true
