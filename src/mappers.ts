@@ -286,25 +286,19 @@ const getCallMessageText = (msg: EndAVBroadcastMessage): string => {
   const isAudioCall = msg.call_type === 'AUDIO_ONLY'
   const callType = isAudioCall ? 'audio call' : 'video call'
 
-  let text: string
   switch (msg.end_reason) {
     case 'CANCELED':
-      text = `Canceled ${callType}`
-      break
+      return `Canceled ${callType}`
     case 'MISSED':
-      text = `Missed ${callType}`
-      break
+      return `Missed ${callType}`
     case 'DECLINED':
-      text = `Declined ${callType}`
-      break
+      return `Declined ${callType}`
     case 'TIMED_OUT':
     case 'HUNG_UP':
-      text = `${isAudioCall ? 'Audio call' : 'Video call'} ended`
-      break
+      return `${isAudioCall ? 'Audio call' : 'Video call'} ended`
     default:
-      text = `${isAudioCall ? 'Audio call' : 'Video call'}`
+      return `${isAudioCall ? 'Audio call' : 'Video call'}`
   }
-  return text
 }
 
 export function mapMessage(m: TwitterMessage, currentUserID: string, threadParticipants: TwitterUser[]): Message {
