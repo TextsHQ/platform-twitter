@@ -35,6 +35,20 @@ export const enum MessageType {
   TRUST_CONVERSATION = 'trust_conversation',
   TYPING_INDICATOR = 'typing_indicator',
   WELCOME_MESSAGE = 'welcome_message_create',
+  END_AV_BROADCAST = 'end_av_broadcast',
+}
+
+export const enum CallType {
+  AUDIO_ONLY = 'AUDIO_ONLY',
+  VIDEO = 'VIDEO',
+}
+
+export const enum CallEndReason {
+  MISSED = 'MISSED',
+  CANCELED = 'CANCELED',
+  DECLINED = 'DECLINED',
+  HUNG_UP = 'HUNG_UP',
+  TIMED_OUT = 'TIMED_OUT',
 }
 
 export const NOTIFICATIONS_THREAD_ID = 'notifications'
