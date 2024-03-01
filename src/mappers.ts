@@ -25,7 +25,7 @@ import {
   PartialWithID,
 } from '@textshq/platform-sdk'
 
-import { supportedReactions, MessageType } from './constants'
+import { supportedReactions, MessageType, CallType, CallEndReason } from './constants'
 import type { TwitterUser, TwitterThreadParticipant, TwitterThread, TwitterMessage } from './twitter-types'
 
 const TWITTER_EPOCH = 1288834974657
@@ -282,6 +282,31 @@ function mapTweet(tweet: any, user = tweet.user): Tweet {
   return messageTweet
 }
 
+const getCallMessageText = (msg: TwitterMessage): string => {
+  const isAudioCall = msg.call_type === CallType.AUDIO_ONLY
+  const callType = isAudioCall ? 'audio call' : 'video call'
+
+  let text: string
+  switch (msg.end_reason) {
+    case CallEndReason.CANCELED:
+      text = `Canceled ${callType}`
+      break
+    case CallEndReason.MISSED:
+      text = `Missed ${callType}`
+      break
+    case CallEndReason.DECLINED:
+      text = `Declined ${callType}`
+      break
+    case CallEndReason.TIMED_OUT:
+    case CallEndReason.HUNG_UP:
+      text = `${isAudioCall ? 'Audio call' : 'Video call'} ended`
+      break
+    default:
+      text = `${isAudioCall ? 'Audio call' : 'Video call'}`
+  }
+  return text
+}
+
 export function mapMessage(m: TwitterMessage, currentUserID: string, threadParticipants: TwitterUser[]): Message {
   const type = Object.keys(m)[0]
   const msg = m[type]
@@ -394,6 +419,10 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
           mapped.text = 'You followed this account'
           mapped.action = { type: MessageActionType.MESSAGE_REQUEST_ACCEPTED }
         }
+        break
+      case MessageType.END_AV_BROADCAST:
+        mapped.text = getCallMessageText(msg)
+        mapped.isAction = true
         break
       case 'conversation_create':
         return null
