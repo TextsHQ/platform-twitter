@@ -25,8 +25,8 @@ import {
   PartialWithID,
 } from '@textshq/platform-sdk'
 
-import { supportedReactions, MessageType, CallType, CallEndReason } from './constants'
-import type { TwitterUser, TwitterThreadParticipant, TwitterThread, TwitterMessage } from './twitter-types'
+import { supportedReactions, MessageType } from './constants'
+import type { TwitterUser, TwitterThreadParticipant, TwitterThread, TwitterMessage, CallEndReason, CallType, EndAVBroadcastMessage } from './twitter-types'
 
 const TWITTER_EPOCH = 1288834974657
 function getTimestampFromSnowflake(snowflake: string) {
@@ -282,23 +282,23 @@ function mapTweet(tweet: any, user = tweet.user): Tweet {
   return messageTweet
 }
 
-const getCallMessageText = (msg: TwitterMessage): string => {
-  const isAudioCall = msg.call_type === CallType.AUDIO_ONLY
+const getCallMessageText = (msg: EndAVBroadcastMessage): string => {
+  const isAudioCall = msg.call_type === 'AUDIO_ONLY'
   const callType = isAudioCall ? 'audio call' : 'video call'
 
   let text: string
   switch (msg.end_reason) {
-    case CallEndReason.CANCELED:
+    case 'CANCELED':
       text = `Canceled ${callType}`
       break
-    case CallEndReason.MISSED:
+    case 'MISSED':
       text = `Missed ${callType}`
       break
-    case CallEndReason.DECLINED:
+    case 'DECLINED':
       text = `Declined ${callType}`
       break
-    case CallEndReason.TIMED_OUT:
-    case CallEndReason.HUNG_UP:
+    case 'TIMED_OUT':
+    case 'HUNG_UP':
       text = `${isAudioCall ? 'Audio call' : 'Video call'} ended`
       break
     default:
@@ -468,7 +468,7 @@ export const mapMessages = (messages: TwitterMessage[], thread: TwitterThread, c
     mapMessage(m, currentUserID, thread.participants),
     ...getReactionMessages(m, currentUserID),
   ])).filter(Boolean), 'timestamp')
-  // orderBy(messages.map(m => mapMessage(m, currentUserID, thread.participants)).filter(Boolean), 'timestamp')
+// orderBy(messages.map(m => mapMessage(m, currentUserID, thread.participants)).filter(Boolean), 'timestamp')
 
 function groupMessages(entries: any[]) {
   const messages = {}

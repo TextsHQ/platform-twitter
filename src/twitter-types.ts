@@ -25,3 +25,18 @@ export type SendMessageVariables = {
   requestId: string
   target: SendMessageTargetType
 }
+
+export type CallType = 'AUDIO_ONLY' | 'VIDEO'
+
+export type CallEndReason = 'MISSED' | 'CANCELED' | 'DECLINED' | 'HUNG_UP' | 'TIMED_OUT'
+
+export type EndAVBroadcastMessage = {
+  id: string
+  time: string
+  conversation_id: string
+  is_caller: boolean
+  started_at_ms: string
+  ended_at_ms: string
+  end_reason: CallEndReason
+  call_type: CallType
+}
