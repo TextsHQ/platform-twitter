@@ -26,7 +26,7 @@ import {
 } from '@textshq/platform-sdk'
 
 import { supportedReactions, MessageType } from './constants'
-import type { TwitterUser, TwitterThreadParticipant, TwitterThread, TwitterMessage } from './twitter-types'
+import type { TwitterUser, TwitterThreadParticipant, TwitterThread, TwitterMessage, CallEndReason, CallType, EndAVBroadcastMessage } from './twitter-types'
 
 const TWITTER_EPOCH = 1288834974657
 function getTimestampFromSnowflake(snowflake: string) {
@@ -282,6 +282,25 @@ function mapTweet(tweet: any, user = tweet.user): Tweet {
   return messageTweet
 }
 
+const getCallMessageText = (msg: EndAVBroadcastMessage): string => {
+  const isAudioCall = msg.call_type === 'AUDIO_ONLY'
+  const callType = isAudioCall ? 'audio call' : 'video call'
+
+  switch (msg.end_reason) {
+    case 'CANCELED':
+      return `Canceled ${callType}`
+    case 'MISSED':
+      return `Missed ${callType}`
+    case 'DECLINED':
+      return `Declined ${callType}`
+    case 'TIMED_OUT':
+    case 'HUNG_UP':
+      return `${isAudioCall ? 'Audio call' : 'Video call'} ended`
+    default:
+      return `${isAudioCall ? 'Audio call' : 'Video call'}`
+  }
+}
+
 export function mapMessage(m: TwitterMessage, currentUserID: string, threadParticipants: TwitterUser[]): Message {
   const type = Object.keys(m)[0]
   const msg = m[type]
@@ -395,6 +414,10 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
           mapped.action = { type: MessageActionType.MESSAGE_REQUEST_ACCEPTED }
         }
         break
+      case MessageType.END_AV_BROADCAST:
+        mapped.text = getCallMessageText(msg)
+        mapped.isAction = true
+        break
       case 'conversation_create':
         return null
       default:
@@ -439,7 +462,7 @@ export const mapMessages = (messages: TwitterMessage[], thread: TwitterThread, c
     mapMessage(m, currentUserID, thread.participants),
     ...getReactionMessages(m, currentUserID),
   ])).filter(Boolean), 'timestamp')
-  // orderBy(messages.map(m => mapMessage(m, currentUserID, thread.participants)).filter(Boolean), 'timestamp')
+// orderBy(messages.map(m => mapMessage(m, currentUserID, thread.participants)).filter(Boolean), 'timestamp')
 
 function groupMessages(entries: any[]) {
   const messages = {}

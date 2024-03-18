@@ -35,6 +35,7 @@ export const enum MessageType {
   TRUST_CONVERSATION = 'trust_conversation',
   TYPING_INDICATOR = 'typing_indicator',
   WELCOME_MESSAGE = 'welcome_message_create',
+  END_AV_BROADCAST = 'end_av_broadcast',
 }
 
 export const NOTIFICATIONS_THREAD_ID = 'notifications'
