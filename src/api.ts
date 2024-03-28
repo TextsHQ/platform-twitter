@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs'
-import { Cookie, CookieJar } from 'tough-cookie'
+import { CookieJar } from 'tough-cookie'
 import mem from 'mem'
 import { randomUUID as uuid } from 'crypto'
-import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, User, NotificationsInfo, UserID, PhoneNumber, ThreadFolderName, LoginCreds, ClientContext } from '@textshq/platform-sdk'
+import { texts, PlatformAPI, OnServerEventCallback, Message, LoginResult, Paginated, Thread, MessageContent, InboxName, MessageSendOptions, PaginationArg, ActivityType, ServerEventType, User, NotificationsInfo, UserID, PhoneNumber, ThreadFolderName, LoginCreds, ClientContext, PaginatedWithCursors } from '@textshq/platform-sdk'
 import { pick } from 'lodash'
 
 import { mapThreads, mapMessages, mapEvent, mapUser, mapUserUpdate, mapMessageLink, mapMessage } from './mappers'
@@ -187,7 +187,7 @@ export default class Twitter implements PlatformAPI {
     return (users as any[] || []).map(u => mapUser(u))
   })
 
-  getThreads = async (folderName: ThreadFolderName, pagination: PaginationArg): Promise<Paginated<Thread>> => {
+  getThreads = async (folderName: ThreadFolderName, pagination: PaginationArg): Promise<PaginatedWithCursors<Thread>> => {
     const { cursor, direction } = pagination || { cursor: null, direction: null }
     const inboxType = {
       [InboxName.NORMAL]: 'trusted',
@@ -233,8 +233,6 @@ export default class Twitter implements PlatformAPI {
     return {
       items,
       hasMore: conversation_timeline.status !== 'AT_END',
-      oldestCursor: conversation_timeline.min_entry_id,
-      newestCursor: conversation_timeline.max_entry_id,
     }
   }
 

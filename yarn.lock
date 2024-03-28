@@ -1690,13 +1690,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk#b94072363117f15e8a6b0db66c003a9a5b81a671":
+"@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk#69d1d78006b09323c4e5f6b6e512c7ce20f9c456":
   version: 0.4.4
-  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=b94072363117f15e8a6b0db66c003a9a5b81a671"
+  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=69d1d78006b09323c4e5f6b6e512c7ce20f9c456"
   dependencies:
     emoji-regex: ^10.1.0
+    lodash: ^4.17.21
     qrcode.react: ^3.1.0
-  checksum: 8bffd78ebcc0fb5d2df9f4be341c3d7bec981d4aad5c94037f9543dc48ba0872281e2d2a85cde3e675333166a80381dbb039228196a257a32ab504abddbe5887
+    ws: ^8.15.1
+  dependenciesMeta:
+    lodash:
+      optional: true
+    ws:
+      optional: true
+  checksum: a401adddff3dc5d9d161015243dc1b9800325d7020f0705c0535cb9d2f07b60a569d1b880ee952f0fc2e04466c9e21c3789b8500c815a5f1e53dfe8ebb8108d0
   languageName: node
   linkType: hard
 
@@ -1705,7 +1712,7 @@ __metadata:
   resolution: "@textshq/platform-twitter@workspace:."
   dependencies:
     "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config#main"
-    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#b94072363117f15e8a6b0db66c003a9a5b81a671"
+    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#69d1d78006b09323c4e5f6b6e512c7ce20f9c456"
     "@types/eslint": ^8.4.10
     "@types/eventsource": ^1.1.5
     "@types/he": ^1.1.1
@@ -4784,6 +4791,21 @@ __metadata:
   version: 1.0.2
   resolution: "wrappy@npm:1.0.2"
   checksum: 159da4805f7e84a3d003d8841557196034155008f817172d4e986bd591f74aa82aa7db55929a54222309e01079a65a92a9e6414da5a6aa4b01ee44a511ac3ee5
+  languageName: node
+  linkType: hard
+
+"ws@npm:^8.15.1":
+  version: 8.16.0
+  resolution: "ws@npm:8.16.0"
+  peerDependencies:
+    bufferutil: ^4.0.1
+    utf-8-validate: ">=5.0.2"
+  peerDependenciesMeta:
+    bufferutil:
+      optional: true
+    utf-8-validate:
+      optional: true
+  checksum: feb3eecd2bae82fa8a8beef800290ce437d8b8063bdc69712725f21aef77c49cb2ff45c6e5e7fce622248f9c7abaee506bae0a9064067ffd6935460c7357321b
   languageName: node
   linkType: hard
 
