@@ -314,7 +314,6 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
     senderID: null,
     text: null,
     linkedMessageID: msg.message_data?.reply_data?.id,
-    cursor: msg.id,
   }
   if (msg.affects_sort === false) {
     mapped.behavior = MessageBehavior.SILENT
