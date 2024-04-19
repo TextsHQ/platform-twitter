@@ -394,10 +394,13 @@ export default class TwitterAPI {
     includeLinkPreview?: boolean
   }) {
     const body = {
+      cards_platform: 'Web-12',
       conversation_id: threadID,
+      // dm_users: 'true',
+      include_cards: 1,
+      include_quote_count: true,
       media_id: mediaID,
       recipient_ids: threadID ? 'false' : recipientIDs.join(','),
-      // dm_users: 'true',
       reply_to_dm_id: replyID,
       request_id: (generatedMsgID || uuid()).toUpperCase(),
       ...(includeLinkPreview ? {} : { card_uri: 'tombstone://card' }),
