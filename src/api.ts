@@ -404,7 +404,7 @@ export default class Twitter implements PlatformAPI {
     if (threadID === NOTIFICATIONS_THREAD_ID) throw new Error('Notifications thread cannot be reported')
     const result = await texts.openBrowserWindow(this.accountID, {
       windowTitle: 'Report thread',
-      url: 'https://twitter.com/i/safety/report_story?' + new URLSearchParams({
+      url: 'https://x.com/i/safety/report_story?' + new URLSearchParams({
         client_location: encodeURIComponent('messages:thread:'),
         client_referer: encodeURIComponent('/messages/threadID'),
         client_app_id: '3033300',

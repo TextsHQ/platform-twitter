@@ -24,7 +24,7 @@ const info: PlatformInfo = {
   },
   deletionMode: MessageDeletionMode.DELETE_FOR_SELF,
   browserLogin: {
-    url: 'https://twitter.com/login',
+    url: 'https://x.com/login',
     authCookieName: 'auth_token',
     runJSOnNavigate: `
       // hide close button on login page on mobile
@@ -67,7 +67,7 @@ const info: PlatformInfo = {
     noSupportForFiles: true,
     supportsCaption: true,
 
-    // https://developer.twitter.com/en/docs/twitter-api/v1/media/upload-media/uploading-media/media-best-practices
+    // https://developer.x.com/en/docs/twitter-api/v1/media/upload-media/uploading-media/media-best-practices
     maxSize: {
       // media_upload_init(media_type=image/jpeg, media_category=dm_image): File size exceeds 5242880 bytes.
       image: 5 * 1024 * 1024,
