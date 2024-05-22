@@ -23,6 +23,7 @@ const info: PlatformInfo = {
     canReactWithAllEmojis: true,
   },
   deletionMode: MessageDeletionMode.DELETE_FOR_SELF,
+  autofillHostnames: ['twitter.com', 'x.com'],
   browserLogin: {
     url: 'https://x.com/login',
     authCookieName: 'auth_token',
