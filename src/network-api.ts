@@ -225,7 +225,9 @@ export default class TwitterAPI {
   authenticatedGet = async (url: string) => {
     if (!this.cookieJar) throw new Error('Not authorized')
     await this.setCSRFTokenCookie()
-    const res = await this.httpClient.requestAsBuffer(url, {
+    const parsed = new URL(url)
+    parsed.hostname = parsed.hostname.replace('twitter.com', 'x.com')
+    const res = await this.httpClient.requestAsBuffer(parsed.toString(), {
       cookieJar: this.cookieJar,
       headers: {
         Accept: 'image/webp,image/apng,image/*,*/*;q=0.8', // todo review for videos
