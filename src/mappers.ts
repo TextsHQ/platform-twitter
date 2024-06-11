@@ -62,7 +62,7 @@ function mapEntities(entities: Entities, removeIndices?: [number, number][]): Te
   if (!entities) return
   return [
     ...(entities?.urls || []).map<TextEntity>(url => {
-      const shouldRemove = url.expanded_url.startsWith('https://x.com/messages/media/') || removeIndices?.toString() === url.indices.toString()
+      const shouldRemove = url.expanded_url.startsWith('https://twitter.com/messages/media/') || removeIndices?.toString() === url.indices.toString()
       const from = Math.max(0, url.indices[0] + (shouldRemove ? -1 : 0))
       const to = url.indices[1]
       if (shouldRemove) {
