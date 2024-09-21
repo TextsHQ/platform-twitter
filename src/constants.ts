@@ -17,6 +17,8 @@ export const enum MessageType {
   CONVERSATION_NAME_UPDATE = 'conversation_name_update',
   CONVERSATION_PROFILE_INFO_HEADER = 'conversation_profile_info_header',
   CONVERSATION_READ = 'conversation_read',
+  CONVERSATION_CREATE = 'conversation_create',
+  CONVO_METADATA_UPDATE = 'convo_metadata_update',
   DISABLE_NOTIFICATIONS = 'disable_notifications',
   ENABLE_NOTIFICATIONS = 'enable_notifications',
   JOIN_CONVERSATION = 'join_conversation',

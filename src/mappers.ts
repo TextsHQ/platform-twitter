@@ -418,7 +418,8 @@ export function mapMessage(m: TwitterMessage, currentUserID: string, threadParti
         mapped.text = getCallMessageText(msg)
         mapped.isAction = true
         break
-      case 'conversation_create':
+      case MessageType.CONVERSATION_CREATE:
+      case MessageType.CONVO_METADATA_UPDATE:
         return null
       default:
     }
